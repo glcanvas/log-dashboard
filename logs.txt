@@ -1,0 +1,93 @@
+список возможных логов и их последовательность
+
+Каждый лог элемент это json объект, содержащий поля, определенные ниже
+
+0) общие поля для всех запросов
+log_level -- W, E, D, I
+server_name --
+time
+user_id
+
+Далее список сервисов и их логи
+
+1) сервис авторизации
+a) вызов функции авторизации -- request_id, user_id, password_hash
+b) запрос в бд -- request_id, sql_query -- select one(*) from users where users.user_id = user_id and users.password_hash = password_hash
+c) ответ из бд -- request_id, status => {correct, error}
+
+2) сервис показа страниц каталога
+
+2.1) показ конкретного продукта
+a) request_id, user_id, product_id
+b) sql log -- request_id, user_id, sql_query -- write your own
+c) sql log response -- request_id, user_id, product_id, response -- some data description
+
+e) request for linked products -- request_id, user_id, sql_query -- write your own
+f) response -- request_id, user_id, linked_products => {product_1: description... product_n: descirption}
+
+2.2) показ каталога
+a) request_id, user_id, product_id
+b) request for products -- request_id, user_id, sql_query -- write your own
+c) response -- request_id, user_id, products => {product_1: description... product_n: descirption}
+
+
+3) сервис корзина (card)
+3.1 операции
+a) request_id, user_id, product_id, count, action:{add, delete}
+b) request_id, user_id, product_id, redis_request: {some meta data}
+c) request_id, user_id, product_id, Redis_response: {deleted, added, error}
+3.2 получить список
+a) request_id, user_id, product_id, count, action:{get}
+b) request_id, user_id, product_id, redis_request: {get request}
+c) request_id, user_id, product_id, Redis_response: {response}
+
+4) сервис заказов -- orders service
+
+4.1) добавление заказа, отмена, возврат
+a) request_id, user_id, action: {reserve, buy, refund} reserve status -- заказ забронирован, у вас есть 15 минут на его оплату
+b) request_id, user_id, order_details
+c) request_id, user_id, sql_query -- insert into order table info about orders
+d) request_id, user_id, status -- ok
+
+4.2) обновление статуса что оплата прошла
+a) request_id, user_id, order_id, payment_status: {ok, error}
+
+5) сервис оплаты заказов -- payment service
+
+a) request_id, user_id, payment_provider: {mastercard, visa, btc}
+b) request_id, user_id, payment_credentails: {password, card_number}
+c) request_id, user_id, response: {ok, error}
+
+
+Композиция логов
+не трудно заметить что такие части сами по себе делают не особо много,
+например сервис заказов должен так же поддерживать внутри себя логи о платежах, а затем логи о том что статус заказа пометился оплаченым
+тогда полный порядок логов должен выглядеть следующим образом
+
+Далее будут приведены примеры композиций
+если что-то пропущено можно добавить up-to-you
+
+1) отрисовка страницы с продуктом -- 1) надо получить конкретный продукт 2) надо получить смежные продукты -- два запроса 3) получить что-там в корзине
+-- см как сделано на амазоне
+
+2) заказ и оплата
+для этого надо вывестил логи из пунктов 4.1, 5 а затем 4.2
+
+3) отрисовка списка продуктов -- 1) получить список продуктов 2) получить корзину
+
+4) up-to-you
+
+
+=================================================================================
+=================================================================================
+=================================================================================
+
+примеры логов:
+все логи имеют формат json
+{
+"log_level": "D",
+"user_id": "1488",
+"server_name": "auth-server",
+"product_id": "product-228"
+"time": "2007-01-13T23:23:23.000Z"
+}
