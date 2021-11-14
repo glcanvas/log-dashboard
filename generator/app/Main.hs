@@ -1,2 +1,11 @@
+module Main where
+
+import Universum
+
+import RIO.Orphans ()
+
+import Generator.Setup (runGenerator)
+import Generator.Runner (runner)
+
 main :: IO ()
-main = putStrLn "Hello, World!"
+main = runGenerator runner

@@ -28,6 +28,7 @@ default-extensions:
   - MultiWayIf
   - NamedFieldPuns
   - NegativeLiterals
+  - NoImplicitPrelude
   - NoStarIsType
   - NumDecimals
   - OverloadedLabels
@@ -75,8 +76,24 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+    - async
+    - lens
+    - random
+    - rio
+    - say
+    - stm
+    - stm-containers
+    - unliftio-core
 
 executables:
   generator:
     main:                Main.hs
     source-dirs:         app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - generator
+      - rio-orphans

@@ -2,3 +2,7 @@ resolver: lts-18.10
 
 packages:
 - .
+
+extra-deps:
+  - stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
+  - stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
