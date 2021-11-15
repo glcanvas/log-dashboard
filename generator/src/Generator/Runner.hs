@@ -4,22 +4,26 @@ module Generator.Runner
 
 import Universum
 
-import Generator.Setup (Generator, GeneratorWorkMode)
 import Control.Concurrent (threadDelay)
-import Generator.Services.Login (MonadLogin(..), HasLogin (..))
-import Control.Concurrent.STM.TQueue (tryReadTQueue, writeTQueue)
 import Control.Concurrent.Async (async, wait)
-import Control.Monad.IO.Unlift (UnliftIO (..), askUnliftIO)
-import System.Random (randomIO, randomRIO)
-import Generator.Services.Page (HasPage (..), MonadPage (..))
+import Control.Concurrent.STM.TQueue (tryReadTQueue, writeTQueue)
+import Control.Monad.IO.Unlift (UnliftIO(..), askUnliftIO)
+import System.Random (randomRIO)
+
+import Generator.Services.Login (HasLogin(..), MonadLogin(..))
+import Generator.Services.Page (HasPage(..), MonadPage(..))
+import Generator.Setup (GeneratorWorkMode)
 
 loginAction :: GeneratorWorkMode m => m ()
 loginAction = forever $ do
   liftIO $ threadDelay 1000000
-  n <- login
-  qp <- getPageQueue <$> ask
-  atomically $ writeTQueue qp n
-  
+  mUserId <- login
+  case mUserId of
+    Just userId -> do
+      qp <- getPageQueue <$> ask
+      atomically $ writeTQueue qp userId
+    _ -> pure ()
+
 
 logoutAction :: GeneratorWorkMode m => m ()
 logoutAction = forever $ do

@@ -1,4 +1,4 @@
-module Generator.Services.Page 
+module Generator.Services.Page
   ( MonadPage (..)
   , HasPage (..)
   ) where

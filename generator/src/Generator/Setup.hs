@@ -7,13 +7,14 @@ module Generator.Setup
 import Universum
 
 import qualified StmContainers.Set as S
+
 import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO)
 import Control.Lens (makeLenses)
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import RIO (RIO, runRIO)
 
-import Generator.Services.Login (MonadLogin (..), HasLogin (..))
-import Generator.Services.Page (MonadPage (..), HasPage (..))
-import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Generator.Services.Login (HasLogin(..), MonadLogin(..))
+import Generator.Services.Page (HasPage(..), MonadPage(..))
 
 data GeneratorContext = GeneratorContext
   { _gcUsers :: S.Set Int

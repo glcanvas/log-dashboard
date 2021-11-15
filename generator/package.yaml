@@ -77,13 +77,17 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+    - aeson
     - async
+    - hedgehog
     - lens
     - random
     - rio
     - say
     - stm
     - stm-containers
+    - template-haskell
+    - time
     - unliftio-core
 
 executables:

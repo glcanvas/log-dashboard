@@ -18,6 +18,10 @@ source-repository head
 
 library
   exposed-modules:
+      Generator.Data.Base
+      Generator.Data.Common
+      Generator.Data.Login
+      Generator.Data.Util
       Generator.Runner
       Generator.Services.Login
       Generator.Services.Page
@@ -75,14 +79,18 @@ library
       ViewPatterns
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude
   build-depends:
-      async
+      aeson
+    , async
     , base
+    , hedgehog
     , lens
     , random
     , rio
     , say
     , stm
     , stm-containers
+    , template-haskell
+    , time
     , universum
     , unliftio-core
   if impl(ghc >= 8.10.0)
