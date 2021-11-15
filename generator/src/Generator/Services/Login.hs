@@ -16,33 +16,33 @@ import Generator.Data.Common (Status(..), UserId(..))
 import Generator.Data.Login (lorepStatus, lrepStatus)
 
 class Monad m => MonadLogin m where
-  login :: m (Maybe Int)
-  logout :: Int -> m ()
+  login :: m (Maybe UserId)
+  logout :: UserId -> m ()
 
 class HasLogin env where
-  getUsers :: env -> S.Set Int
-  getLogoutQueue :: env -> TQueue Int
+  getUsers :: env -> S.Set UserId
+  getLogoutQueue :: env -> TQueue UserId
 
 instance (MonadIO m, Monad m, HasLogin env, MonadReader env m) => MonadLogin m where
   login = do
     (req, reqDb, rep) <- liftIO genLoginData
     say $ decodeUtf8 $ encode req
     say $ decodeUtf8 $ encode reqDb
-    let (UserId uId) = req ^. dCommonData . cdUserId
+    let userId = req ^. dCommonData . cdUserId
     case rep ^. dData . lrepStatus of
       Invalid -> (say $ decodeUtf8 $ encode rep) >> pure Nothing
       _ -> do
         users <- getUsers <$> ask
-        atomically $ S.insert uId users
+        atomically $ S.insert userId users
         say $ decodeUtf8 $ encode rep
-        pure $ Just uId
-  logout uId = do
-    (req, reqDb, rep) <- liftIO $ genLogoutData $ UserId uId
+        pure $ Just userId
+  logout userId = do
+    (req, reqDb, rep) <- liftIO $ genLogoutData userId
     say $ decodeUtf8 $ encode req
     say $ decodeUtf8 $ encode reqDb
     case rep ^. dData . lorepStatus of
-      Invalid -> (say $ decodeUtf8 $ encode rep)
+      Invalid -> say $ decodeUtf8 $ encode rep
       _ -> do
         users <- getUsers <$> ask
-        atomically $ S.delete uId users
+        atomically $ S.delete userId users
         say $ decodeUtf8 $ encode rep

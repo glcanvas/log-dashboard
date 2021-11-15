@@ -14,12 +14,13 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import RIO (RIO, runRIO)
 
 import Generator.Services.Login (HasLogin(..), MonadLogin(..))
-import Generator.Services.Page (HasPage(..), MonadPage(..))
+import Generator.Services.Catalog (HasCatalog(..), MonadCatalog(..), CatalogAction)
+import Generator.Data.Common (UserId)
 
 data GeneratorContext = GeneratorContext
-  { _gcUsers :: S.Set Int
-  , _gcPageQueue :: TQueue Int
-  , _gcLogoutQueue :: TQueue Int
+  { _gcUsers :: S.Set UserId
+  , _gcCatalogQueue :: TQueue CatalogAction
+  , _gcLogoutQueue :: TQueue UserId
   }
 
 makeLenses ''GeneratorContext
@@ -35,9 +36,9 @@ type GeneratorWorkMode m =
   , MonadMask m
   , MonadReader GeneratorContext m
   , HasLogin GeneratorContext
-  , HasPage GeneratorContext
+  , HasCatalog GeneratorContext
   , MonadLogin m
-  , MonadPage m
+  , MonadCatalog m
   )
 
 runGenerator :: Generator a -> IO a
@@ -51,5 +52,5 @@ instance HasLogin GeneratorContext where
   getUsers = (^. gcUsers)
   getLogoutQueue = (^. gcLogoutQueue)
 
-instance HasPage GeneratorContext where
-  getPageQueue = (^. gcPageQueue)
+instance HasCatalog GeneratorContext where
+  getCatalogQueue = (^. gcCatalogQueue)

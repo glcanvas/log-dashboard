@@ -26,6 +26,7 @@ data ServerName = Login | Catalog
 deriveToJSON ''ServerName
 
 newtype UserId = UserId { unUserId :: Int }
+  deriving newtype (Eq, Hashable)
 deriveToJSON 'UserId
 
 genUserId :: MonadGen m => m UserId

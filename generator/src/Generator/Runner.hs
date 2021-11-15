@@ -10,8 +10,8 @@ import Control.Concurrent.STM.TQueue (tryReadTQueue, writeTQueue)
 import Control.Monad.IO.Unlift (UnliftIO(..), askUnliftIO)
 import System.Random (randomRIO)
 
+import Generator.Services.Catalog (CatalogAction(..), HasCatalog(..), MonadCatalog(..))
 import Generator.Services.Login (HasLogin(..), MonadLogin(..))
-import Generator.Services.Page (HasPage(..), MonadPage(..))
 import Generator.Setup (GeneratorWorkMode)
 
 loginAction :: GeneratorWorkMode m => m ()
@@ -20,33 +20,39 @@ loginAction = forever $ do
   mUserId <- login
   case mUserId of
     Just userId -> do
-      qp <- getPageQueue <$> ask
-      atomically $ writeTQueue qp userId
+      catalogQueue <- getCatalogQueue <$> ask
+      atomically $ writeTQueue catalogQueue $ CatalogVisit userId
     _ -> pure ()
-
 
 logoutAction :: GeneratorWorkMode m => m ()
 logoutAction = forever $ do
   liftIO $ threadDelay 1000000
-  q <- getLogoutQueue <$> ask
-  mI <- atomically $ tryReadTQueue q
-  case mI of
-    Just i -> logout i
+  logoutQueue <- getLogoutQueue <$> ask
+  mUserId <- atomically $ tryReadTQueue logoutQueue
+  case mUserId of
+    Just userId -> logout userId
     _ -> pure ()
 
 pageAction :: GeneratorWorkMode m => m ()
 pageAction = forever $ do
   liftIO $ threadDelay 1000000
-  nr <- liftIO $ randomRIO (1 :: Int, 10)
-  qp <- getPageQueue <$> ask
-  ql <- getLogoutQueue <$> ask
-  mI <- atomically $ tryReadTQueue qp
-  case mI of
-    Just i -> do
-      pageVisit i
-      if nr == 1
-      then atomically $ writeTQueue ql i
-      else atomically $ writeTQueue qp i
+  rn <- liftIO $ randomRIO (1 :: Int, 10)
+  catalogQueue <- getCatalogQueue <$> ask
+  logoutQueue <- getLogoutQueue <$> ask
+  mAction <- atomically $ tryReadTQueue catalogQueue
+  case mAction of
+    Just (CatalogVisit userId) -> do
+      catalogVisit userId
+      if rn == 1
+      then atomically $ writeTQueue logoutQueue userId
+      else atomically $ writeTQueue catalogQueue $ ProductVisit userId
+    Just (ProductVisit userId) -> do
+      productVisit userId
+      if rn == 1
+      then atomically $ writeTQueue logoutQueue userId
+      else if rn < 4
+           then atomically $ writeTQueue catalogQueue $ CatalogVisit userId
+           else atomically $ writeTQueue catalogQueue $ ProductVisit userId
     _ -> pure ()
 
 runner :: GeneratorWorkMode m => m ()
@@ -56,6 +62,3 @@ runner = do
   _ <- liftIO $ async $ unlift pageAction
   _ <- liftIO $ async $ unlift logoutAction
   liftIO $ wait a1
-
-
-
