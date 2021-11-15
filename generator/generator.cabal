@@ -23,6 +23,7 @@ library
       Generator.Data.Common
       Generator.Data.Login
       Generator.Data.Util
+      Generator.Kafka
       Generator.Runner
       Generator.Services.Catalog
       Generator.Services.Login
@@ -84,6 +85,7 @@ library
     , async
     , base
     , hedgehog
+    , hw-kafka-client
     , lens
     , random
     , rio

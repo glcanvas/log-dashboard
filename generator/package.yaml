@@ -80,6 +80,7 @@ library:
     - aeson
     - async
     - hedgehog
+    - hw-kafka-client
     - lens
     - random
     - rio
