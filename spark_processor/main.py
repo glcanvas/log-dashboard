@@ -67,6 +67,8 @@ def count_online_users(login_stream: DStream):
         .map(lambda kv: (kv[0], [i for i in kv[1]])) \
         .filter(lambda kv: len(kv[1]) > 0) \
         .updateStateByKey(lambda new_value, old_state: register_login_next_state(new_value, old_state)) \
+        .filter(lambda kv: kv[1][0] == LOGIN_DB_RESPONSE) \
+        .count() \
         .foreachRDD(print_rdd)
 
 
