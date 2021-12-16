@@ -13,6 +13,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
+      
+      - name: rdkafka
+        shell: bash
+        run: sudo apt-get install -y librdkafka-dev
 
       - name: Cache dependencies (Unix)
         uses: actions/cache@v1
