@@ -53,7 +53,7 @@ jobs:
       - name: rdkafka
         run: sudo apt-get install -y librdkafka-dev
       - name: Build
-        run:  cd generator && stack build --ghc-options ' -static -optl-static -optl-pthread -fPIC' --docker --docker-image "utdemir/ghc-musl:v22-ghc921" --no-nix
+        run:  cd generator && stack build --ghc-options ' -static -optl-static -optl-pthread -fPIC' --docker --docker-image "utdemir/ghc-musl:v22-ghc901" --no-nix
       - uses: actions/download-artifact@v2
         with:
           name: release_url
