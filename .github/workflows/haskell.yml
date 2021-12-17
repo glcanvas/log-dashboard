@@ -1,0 +1,89 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  IMAGE_NAME: generator
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+      - run: |
+          echo "${{ steps.create-release.outputs.upload_url }}" > release_url.txt
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: release_url
+          path: release_url.txt
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: create-release
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      
+      - name: rdkafka
+        shell: bash
+        run: sudo apt-get install -y librdkafka-dev
+
+      - uses: actions/setup-haskell@v1.1
+        with:
+          enable-stack: true
+      - name: Cache stack
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-stack
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/stack.yaml.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Build
+        run:  cd generator && stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks --docker --docker-image "utdemir/ghc-musl:v22-ghc8107" --no-nix
+      - uses: actions/download-artifact@v2
+        with:
+          name: release_url
+      - id: get_release_info
+        run: |
+          echo "::set-output name=upload_url::$(cat release_url/release_url.txt)"
+      - name: Upload Linux binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: ./generator/.stack-work/docker/_home/.local/bin/pacrd-migrate
+          asset_name: generator
+          asset_content_type: application/octet-stream
+      - name: Tag & publish to GitHub Container Registry
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
+          VERSION=latest
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+#       - name: Cache dependencies (Unix)
+#         uses: actions/cache@v1
+#         with:
+#           path: ~/.stack
+#           key: ${{ runner.os }}-store-${{ hashFiles('generator/stack.yaml.lock') }}-${{ hashFiles('generator/generator.cabal') }}
+
+#       - name: Build generator
+#         run: cd generator && stack build
+#       - name: Upload artifact
+#         uses: actions/upload-artifact@v1
+#         with:
+#           name: generator-${{ runner.os }}
+#           path: package
