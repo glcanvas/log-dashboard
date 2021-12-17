@@ -34,7 +34,7 @@ import Generator.Data.Login
   (LoginDbRequest, LoginReply, LoginRequest, LogoutDbRequest, LogoutReply, LogoutRequest(..),
   genLoginDbRequest, genLoginReply, genLoginRequest, genLogoutDbRequest, genLogoutReply,
   lreqPasswordHash)
-import Generator.Data.Util (deriveToJSON)
+import Generator.Data.Util (AesonType(..), deriveToJSON)
 
 data ActionType
   = LoginReq
@@ -53,7 +53,7 @@ data ActionType
   | CatalogReq
   | CatalogDbReq
   | CatalogDbRep
-deriveToJSON ''ActionType
+deriveToJSON ''ActionType MultipleF
 
 data CommonData = CommonData
   { _cdLogLevel :: Level
@@ -63,7 +63,7 @@ data CommonData = CommonData
   , _cdRequestId :: RequestId
   }
 makeLenses ''CommonData
-deriveToJSON 'CommonData
+deriveToJSON 'CommonData MultipleF
 
 data Data a = Data
   { _dAction :: ActionType
@@ -71,7 +71,7 @@ data Data a = Data
   , _dData :: a
   }
 makeLenses ''Data
-deriveToJSON 'Data
+deriveToJSON 'Data MultipleF
 
 genLoginData :: IO (Data LoginRequest, Data LoginDbRequest, Data LoginReply)
 genLoginData = do

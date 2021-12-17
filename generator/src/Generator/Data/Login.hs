@@ -25,18 +25,18 @@ import Control.Lens (makeLenses)
 import Hedgehog (MonadGen)
 
 import Generator.Data.Common (Status(..), UserId(..), genStatus)
-import Generator.Data.Util (deriveToJSON, genName)
+import Generator.Data.Util (AesonType(..), deriveToJSON, genName)
 
 newtype LoginRequest = LoginRequest { _lreqPasswordHash :: Text }
 makeLenses ''LoginRequest
-deriveToJSON 'LoginRequest
+deriveToJSON 'LoginRequest MultipleF
 
 genLoginRequest :: MonadGen m => m LoginRequest
 genLoginRequest = LoginRequest <$> genName
 
 newtype LoginDbRequest = LoginDbRequest { _ldrQuery :: Text }
 makeLenses ''LoginDbRequest
-deriveToJSON 'LoginDbRequest
+deriveToJSON 'LoginDbRequest MultipleF
 
 genLoginDbRequest :: UserId -> Text -> LoginDbRequest
 genLoginDbRequest (UserId id') t = LoginDbRequest $
@@ -44,17 +44,17 @@ genLoginDbRequest (UserId id') t = LoginDbRequest $
 
 newtype LoginReply = LoginReply {_lrepStatus :: Status}
 makeLenses ''LoginReply
-deriveToJSON 'LoginReply
+deriveToJSON 'LoginReply MultipleF
 
 genLoginReply :: MonadGen m => m LoginReply
 genLoginReply = LoginReply <$> genStatus
 
 data LogoutRequest = LogoutRequest
-deriveToJSON 'LogoutRequest
+deriveToJSON 'LogoutRequest MultipleF
 
 newtype LogoutDbRequest = LogoutDbRequest { _lodrQuery :: Text }
 makeLenses ''LogoutDbRequest
-deriveToJSON 'LogoutDbRequest
+deriveToJSON 'LogoutDbRequest MultipleF
 
 genLogoutDbRequest :: UserId -> LogoutDbRequest
 genLogoutDbRequest (UserId id') = LogoutDbRequest $
@@ -62,7 +62,7 @@ genLogoutDbRequest (UserId id') = LogoutDbRequest $
 
 newtype LogoutReply = LogoutReply {_lorepStatus :: Status}
 makeLenses ''LogoutReply
-deriveToJSON 'LogoutReply
+deriveToJSON 'LogoutReply MultipleF
 
 genLogoutReply :: MonadGen m => m LogoutReply
 genLogoutReply = LogoutReply <$> genStatus

@@ -35,12 +35,15 @@ class Monad m => MonadKafka m where
   logKafka :: Text -> m ()
 
 class HasKafka env where
-  getProducer :: env -> KafkaProducer
+  getProducer :: env -> Maybe KafkaProducer
 
 instance (MonadIO m, Monad m, HasKafka env, MonadReader env m) => MonadKafka m where
   logKafka t = do
-    producer <- getProducer <$> ask
-    mErr <- produceMessage producer $ mkMessage t
-    case mErr of
-      Just err -> say $ show err
-      _ -> pass
+    mProducer <- getProducer <$> ask
+    case mProducer of
+      Nothing -> say t
+      Just producer -> do
+        mErr <- produceMessage producer $ mkMessage t
+        case mErr of
+          Just err -> say $ show err
+          _ -> pass
