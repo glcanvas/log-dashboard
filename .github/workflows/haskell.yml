@@ -26,16 +26,6 @@ jobs:
 
       - name: Build generator
         run: cd generator && stack build
-
-      - name: Package generator
-        shell: bash
-        run: |
-          mkdir package
-          cd generator
-          dir=$(stack path --dist-dir)/build/generator
-          [[ -e "$dir/generator" ]] && cp "$dir/generator" ../package/myRetroGenerator
-          cd ..
-          cp -r static template package/
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
