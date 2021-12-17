@@ -11,8 +11,11 @@ import qualified StmContainers.Set as S
 import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO)
 import Control.Lens (makeLenses)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import Kafka.Producer (KafkaProducer, closeProducer, newProducer)
+import Data.Text as T
+import Kafka.Consumer (BrokerAddress(..))
+import Kafka.Producer (KafkaProducer, brokersList, closeProducer, newProducer)
 import RIO (RIO, runRIO)
+import System.Environment.Blank (getEnv)
 
 import Generator.Data.Common (UserId)
 import Generator.Kafka (HasKafka(..), MonadKafka(..), producerProps)
@@ -51,11 +54,14 @@ runGenerator action = do
   q <- newTQueueIO
   q' <- newTQueueIO
   s <- S.newIO
-  bracket mkProducer clProducer $ \case
+  mBroker <- getEnv "KAFKA_BROKER"
+  let
+    additionalBrokers =
+      maybeToMonoid (brokersList . pure . BrokerAddress . T.pack <$> mBroker)
+  bracket (newProducer $ producerProps <> additionalBrokers) clProducer $ \case
     Left err -> putStrLn ((show err) :: Text)
     Right prod -> runRIO (GeneratorContext s q q' prod) action
   where
-    mkProducer = newProducer producerProps
     clProducer (Left _) = return ()
     clProducer (Right prod) = closeProducer prod
 

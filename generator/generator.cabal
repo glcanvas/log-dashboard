@@ -93,6 +93,7 @@ library
     , stm
     , stm-containers
     , template-haskell
+    , text
     , time
     , universum
     , unliftio-core

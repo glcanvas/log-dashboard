@@ -1,0 +1,3 @@
+import Universum
+
+main = pure ()
