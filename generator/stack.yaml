@@ -1,4 +1,4 @@
-resolver: lts-18.10
+resolver: nightly-2021-12-16
 
 packages:
 - .
@@ -6,4 +6,3 @@ packages:
 extra-deps:
   - stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
   - stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
-  - integer-gmp-1.0.3.0@sha256:514e81647473ce380cf1814821664c0dcedc2801ad8dbf41b19a10f916e1cc75,2138
