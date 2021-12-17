@@ -32,10 +32,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
-      
-      - name: rdkafka
-        shell: bash
-        run: sudo apt-get install -y librdkafka-dev
 
       - uses: haskell/actions/setup@v1
         with:
@@ -54,8 +50,10 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: rdkafka
+        run: sudo apt-get install -y librdkafka-dev
       - name: Build
-        run:  cd generator && stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks --docker --docker-image "utdemir/ghc-musl:v22-ghc901" --no-nix
+        run:  cd generator && stack build --ghc-options ' -static -optl-static -optl-pthread -fPIC' --docker --docker-image "utdemir/ghc-musl:v22-ghc921" --no-nix
       - uses: actions/download-artifact@v2
         with:
           name: release_url
