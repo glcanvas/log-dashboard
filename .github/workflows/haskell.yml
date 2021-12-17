@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: sudo apt-get install -y librdkafka-dev
 
-      - uses: actions/setup-haskell@v1.1
+      - uses: actions/setup-haskell@v1.1.4
         with:
           enable-stack: true
       - name: Cache stack
