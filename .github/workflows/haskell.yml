@@ -39,7 +39,7 @@ jobs:
 
       - uses: haskell/actions/setup@v1
         with:
-          ghc-version: '8.10.7' # Exact version of ghc to use
+          ghc-version: '9.0.1' # Exact version of ghc to use
           # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
@@ -55,7 +55,7 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Build
-        run:  cd generator && stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks --docker --docker-image "utdemir/ghc-musl:v22-ghc8107" --no-nix
+        run:  cd generator && stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks --docker --docker-image "utdemir/ghc-musl:v22-ghc901" --no-nix
       - uses: actions/download-artifact@v2
         with:
           name: release_url
