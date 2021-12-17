@@ -37,9 +37,12 @@ jobs:
         shell: bash
         run: sudo apt-get install -y librdkafka-dev
 
-      - uses: actions/setup-haskell@v1.1.4
+      - uses: haskell/actions/setup@v1
         with:
+          ghc-version: '8.10.7' # Exact version of ghc to use
+          # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
+          stack-version: 'latest'
       - name: Cache stack
         uses: actions/cache@v2
         env:
