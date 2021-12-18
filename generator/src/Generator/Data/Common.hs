@@ -22,7 +22,7 @@ import Generator.Data.Util (AesonType(..), deriveToJSON)
 data Level = Error | Warning | Info | Debug
 deriveToJSON ''Level MultipleF
 
-data ServerName = Login | Catalog
+data ServerName = Login | Catalog | Card
 deriveToJSON ''ServerName MultipleF
 
 newtype UserId = UserId { unUserId :: Int }
