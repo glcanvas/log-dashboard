@@ -8,11 +8,16 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_SYNC_LIMIT: 2
+    networks:
+      default:
+        {}
+      clickhouse-network:
+        ipv4_address: 172.23.0.8
   kafka:
     image: confluentinc/cp-kafka
     ports:
       - 9094:9094
-      - 9092
+      - 9092:9092
     depends_on:
       - zookeeper
     environment:
@@ -34,6 +39,84 @@ services:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
       - KAFKA_CLUSTERS_0_READONLY=true
+  clickhouse01:
+    image: yandex/clickhouse-server
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.11
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
+#      - "9009:9009"
+    ulimits:
+      nproc: 65535
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./clickhouse01:/etc/clickhouse-server
+    environment:
+      KAFKA_BROKER: "kafka:9092"
+  clickhouse02:
+    image: yandex/clickhouse-server
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.12
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
+#      - "9009:9009"
+    ulimits:
+      nproc: 65535
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./clickhouse02:/etc/clickhouse-server
+    environment:
+      KAFKA_BROKER: "kafka:9092"
+  clickhouse03:
+    image: yandex/clickhouse-server
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.13
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
+#      - "9009:9009"
+    ulimits:
+      nproc: 65535
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./clickhouse03:/etc/clickhouse-server
+    environment:
+      KAFKA_BROKER: "kafka:9092"
+  clickhouse04:
+    image: yandex/clickhouse-server
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.14
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
+#      - "9009:9009"
+    ulimits:
+      nproc: 65535
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./clickhouse04:/etc/clickhouse-server
+    environment:
+      KAFKA_BROKER: "kafka:9092"
+  clickhouse-client:
+    image: yandex/clickhouse-client
+    depends_on:
+      - "clickhouse01"
+    command: ['--host', 'clickhouse01' ]
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.9
+    environment:
+      KAFKA_BROKER: "kafka:9092"
   generator:
     image: klntsky/generator:1.0
     stdin_open: true
@@ -42,4 +125,10 @@ services:
       - kafka
     network_mode: host
     environment:
-      KAFKA_BROKER: localhost:9094
+      KAFKA_BROKER: "localhost:9094"
+
+networks:
+  clickhouse-network:
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24
