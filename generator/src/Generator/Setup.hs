@@ -21,12 +21,14 @@ import Generator.Data.Common (UserId)
 import Generator.Kafka (HasKafka(..), MonadKafka(..), producerProps)
 import Generator.Services.Catalog (CatalogAction, HasCatalog(..), MonadCatalog(..))
 import Generator.Services.Login (HasLogin(..), MonadLogin(..))
+import Generator.Config.Def (GeneratorConfigRec, GeneratorConfig, MonadConfig, HasConfig (..), option)
 
 data GeneratorContext = GeneratorContext
   { _gcUsers :: S.Set UserId
   , _gcCatalogQueue :: TQueue CatalogAction
   , _gcLogoutQueue :: TQueue UserId
-  , _gcKafkaProducer :: KafkaProducer
+  , _gcConfig :: GeneratorConfigRec
+  , _gcKafkaProducer :: Maybe KafkaProducer
   }
 
 makeLenses ''GeneratorContext
@@ -41,6 +43,7 @@ type GeneratorWorkMode m =
   , MonadCatch m
   , MonadMask m
   , MonadReader GeneratorContext m
+  , MonadConfig GeneratorConfig m
   , HasKafka GeneratorContext
   , MonadKafka m
   , HasLogin GeneratorContext
@@ -49,18 +52,20 @@ type GeneratorWorkMode m =
   , MonadCatalog m
   )
 
-runGenerator :: Generator () -> IO ()
-runGenerator action = do
+runGenerator :: GeneratorConfigRec -> Generator () -> IO ()
+runGenerator cfg action = do
   q <- newTQueueIO
   q' <- newTQueueIO
   s <- S.newIO
   mBroker <- getEnv "KAFKA_BROKER"
-  let
-    additionalBrokers =
-      maybeToMonoid (brokersList . pure . BrokerAddress . T.pack <$> mBroker)
-  bracket (newProducer $ producerProps <> additionalBrokers) clProducer $ \case
+  let isKafka = cfg ^. option #kafka
+      additionalBrokers =
+        maybeToMonoid (brokersList . pure . BrokerAddress . T.pack <$> mBroker)
+  if not isKafka
+  then runRIO (GeneratorContext s q q' cfg Nothing) action
+  else bracket (newProducer $ producerProps <> additionalBrokers) clProducer $ \case
     Left err -> putStrLn ((show err) :: Text)
-    Right prod -> runRIO (GeneratorContext s q q' prod) action
+    Right prod -> runRIO (GeneratorContext s q q' cfg $ Just prod) action
   where
     clProducer (Left _) = return ()
     clProducer (Right prod) = closeProducer prod
@@ -71,6 +76,9 @@ instance HasLogin GeneratorContext where
 
 instance HasCatalog GeneratorContext where
   getCatalogQueue = (^. gcCatalogQueue)
+
+instance HasConfig GeneratorContext where
+  getConfig = (^. gcConfig)
 
 instance HasKafka GeneratorContext where
   getProducer = (^. gcKafkaProducer)

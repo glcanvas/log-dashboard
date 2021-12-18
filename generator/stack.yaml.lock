@@ -18,6 +18,56 @@ packages:
       sha256: 1920790535af832b76e7583c33ecf51f8b0b0c3615ef1db1c8ed9be19622c1db
   original:
     hackage: stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
+- completed:
+    name: base-noprelude
+    version: 4.14.3.0
+    git: https://github.com/serokell/base-noprelude.git
+    pantry-tree:
+      size: 823
+      sha256: 1f7bf8a841bc840b332d409dfeee4b68edd192291f76530faceddcfd61dfc429
+    commit: 1282e0b992b00089d55228a2aa9edc4a3581c319
+  original:
+    git: https://github.com/serokell/base-noprelude.git
+    commit: 1282e0b992b00089d55228a2aa9edc4a3581c319
+- completed:
+    subdir: code/base
+    name: loot-base
+    version: 0.0.0.0
+    git: https://github.com/serokell/lootbox.git
+    pantry-tree:
+      size: 440
+      sha256: 887bf6ea9314a9bbd142c509b3edef1db4609febabbe9259773ab508fa28bb83
+    commit: 3dd4723f03cb23a7a57f874962548adf8ec083f3
+  original:
+    subdir: code/base
+    git: https://github.com/serokell/lootbox.git
+    commit: 3dd4723f03cb23a7a57f874962548adf8ec083f3
+- completed:
+    subdir: code/config
+    name: loot-config
+    version: 0.0.0.0
+    git: https://github.com/serokell/lootbox.git
+    pantry-tree:
+      size: 645
+      sha256: def3fdb008750c702bd7fe530b687a8f1f1874512eeca7d485241c0f0693a99a
+    commit: 3dd4723f03cb23a7a57f874962548adf8ec083f3
+  original:
+    subdir: code/config
+    git: https://github.com/serokell/lootbox.git
+    commit: 3dd4723f03cb23a7a57f874962548adf8ec083f3
+- completed:
+    subdir: code/prelude
+    name: loot-prelude
+    version: 0.0.0.0
+    git: https://github.com/serokell/lootbox.git
+    pantry-tree:
+      size: 264
+      sha256: 47da19ed2f317b2f7c6f70a8517c275e7bd8bf25bd628cf271d08d6b5bc5b8ec
+    commit: 3dd4723f03cb23a7a57f874962548adf8ec083f3
+  original:
+    subdir: code/prelude
+    git: https://github.com/serokell/lootbox.git
+    commit: 3dd4723f03cb23a7a57f874962548adf8ec083f3
 snapshots:
 - completed:
     size: 587546
