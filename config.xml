@@ -35,7 +35,7 @@
     <mlock_executable>false</mlock_executable>
 
     <remote_servers>
-        <company_cluster>
+        <webshop>
             <shard>
                 <replica>
                     <host>clickhouse01</host>
@@ -56,7 +56,7 @@
                     <port>9000</port>
                 </replica>
             </shard>
-        </company_cluster>
+        </webshop>
     </remote_servers>
 
     <zookeeper>
@@ -67,7 +67,7 @@
     </zookeeper>
 
     <macros>
-        <cluster>company_cluster</cluster>
+        <cluster>webshop</cluster>
         <shard>${SHARD}</shard>
         <replica>clickhouse${REPLICA}</replica>
     </macros>

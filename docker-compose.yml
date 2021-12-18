@@ -39,9 +39,9 @@ services:
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.11
-    ports:
-      - "8123:8123"
-      - "9000:9000"
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
 #      - "9009:9009"
     ulimits:
       nproc: 65535
@@ -56,9 +56,9 @@ services:
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.12
-    ports:
-      - "8123:8123"
-      - "9000:9000"
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
 #      - "9009:9009"
     ulimits:
       nproc: 65535
@@ -73,9 +73,9 @@ services:
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.13
-    ports:
-      - "8123:8123"
-      - "9000:9000"
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
 #      - "9009:9009"
     ulimits:
       nproc: 65535
@@ -90,9 +90,9 @@ services:
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.14
-    ports:
-      - "8123:8123"
-      - "9000:9000"
+    # ports:
+    #   - "8123:8123"
+    #   - "9000:9000"
 #      - "9009:9009"
     ulimits:
       nproc: 65535
@@ -107,6 +107,9 @@ services:
     depends_on:
       - "clickhouse01"
     command: ['--host', 'clickhouse01' ]
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.9
     environment:
       KAFKA_BROKER: "kafka:9092"
   generator:
@@ -118,6 +121,7 @@ services:
     network_mode: host
     environment:
       KAFKA_BROKER: "localhost:9094"
+
 networks:
   clickhouse-network:
     ipam:
