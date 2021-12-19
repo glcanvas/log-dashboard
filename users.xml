@@ -12,6 +12,8 @@
         <default>
             <password></password>
             <profile>default</profile>
+            <multiline>true</multiline>
+            <multiquery>true</multiquery>
             <networks>
                 <ip>::/0</ip>
             </networks>
@@ -21,6 +23,8 @@
         <admin>
             <password>123</password>
             <profile>default</profile>
+            <multiline>true</multiline>
+            <multiquery>true</multiquery>
             <networks>
                 <ip>::/0</ip>
             </networks>
