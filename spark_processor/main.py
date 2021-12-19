@@ -14,6 +14,14 @@ import os
 import findspark
 findspark.init()
 
+
+
+sc = SparkContext("spark://spark:7077", "app")
+ssc = StreamingContext(sc, 1)
+stream = KafkaUtils.createStream(ssc, ["kafka:9092"], "logs", {"numtest": 1})
+stream.pprint(100)
+
+"""
 def print_rdd(rdd):
     rdd = rdd.take(100)
     for i in rdd:
@@ -226,22 +234,12 @@ if __name__ == "__main__":
     builder = lambda context: KafkaUtils.createStream(context, zookeeper_path, "logs", {"topic": 1})
     # local_builder = lambda context: context.textFileStream("file:" + env_dir)
 
-    spark = initialize_spark("spark://spark:7077", builder, {
+    spark = initialize_spark(spark_path, builder, {
         "login": print_rdd
     }, "log-dashboard-spark")
 
-    """
-    with open("/Users/nduginets/PycharmProjects/log-dashboard/test/correct_login_test.txt", "r") as f:
-        lines = f.readlines()
-
-    for idx, l in enumerate(lines):
-        test_file = os.path.join(env_dir, "{}_test.txt".format(idx))
-        with open(test_file, "w") as w:
-            w.write(l)
-        time.sleep(1)
-
-    print("finish write  to file")
-    """
-
     # spark.awaitTermination(10)
     # shutil.rmtree(env_dir)
+
+"""
+
