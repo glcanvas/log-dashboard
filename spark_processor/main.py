@@ -8,6 +8,7 @@ import json
 from typing import Callable
 import time
 from dateutil import parser
+import datetime
 
 
 def print_rdd(rdd):
@@ -32,10 +33,24 @@ LOGIN_DB_REQUEST = "dbRequest"
 LOGIN_DB_RESPONSE = "dbResponse"
 LOGOUT_REQUEST = "logoutRequest"
 
+##################################################
+##################################################
+##################################################
 CATALOG_REQUEST = "CatalogReq"
 CATALOG_DB_REQUEST = "CatalogDbReq"
 CATALOG_DB_RESPONSE = "CatalogDbRep"
 
+CATALOG_PRODUCT_REQUEST = "CatalogProductReq"
+CATALOG_PRODUCT_DB_REQUEST = "CatalogProductDbReq"
+CATALOG_PRODUCT_DB_RESPONSE = "CatalogProductDbRep"
+
+CATALOG_LINKED_PRODUCT_DB_REQUEST = "CatalogLinkedProductsDbReq"
+CATALOG_LINKED_PRODUCT_DB_RESPONSE = "CatalogLinkedProductsDbRep"
+
+
+##################################################
+##################################################
+##################################################
 
 def try_to_parse(l):
     try:
@@ -115,6 +130,7 @@ def count_online_users(login_stream: DStream):
         .updateStateByKey(lambda new_value, old_state: register_login_next_state(new_value, old_state)) \
         .filter(lambda kv: kv[1][0] == LOGIN_DB_RESPONSE) \
         .count() \
+        .map(lambda c: (datetime.datetime.now(), c)) \
         .foreachRDD(print_rdd)
 
 
@@ -125,20 +141,36 @@ def users_spend_time_online(login_stream: DStream):
     log_out = login_stream \
         .updateStateByKey(lambda new_value, old_state: users_logout_state(new_value, old_state))
 
-    log_in.join(log_out).map(lambda kv: (kv[0], abs(kv[1][0][3] - kv[1][1][3]))).foreachRDD(print_rdd)
+    log_in.join(log_out).map(lambda kv: (kv[0], datetime.datetime.now(), abs(kv[1][0][3] - kv[1][1][3]))) \
+        .foreachRDD(print_rdd)
 
 
 def fail_login(login_stream: DStream):
     login_stream \
         .filter(lambda kv: kv[1][0] == LOGIN_DB_RESPONSE and kv[1][2] is False) \
         .groupByKeyAndWindow(30, 1) \
-        .map(lambda kv: (kv[0], len([i for i in kv[1]]))) \
-        .filter(lambda kv: kv[1] > 3) \
+        .map(lambda kv: (kv[0], datetime.datetime.now(), len([i for i in kv[1]]))) \
+        .filter(lambda kv: kv[2] > 3) \
         .foreachRDD(print_rdd)
 
 
-def catalog_main_page(catalog_stream: DStream):
-    pass
+def catalog_main_page_look_up_times(catalog_stream: DStream):
+    catalog_stream \
+        .updateStateByKey(lambda new_value, old_value: 1 if old_value is None else old_value + 1) \
+        .map(lambda c: (datetime.datetime.now(), c, "!!!")) \
+        .foreachRDD(print_rdd)
+
+
+def trace_logs(json_stream: DStream):
+    json_stream.map(
+        lambda x: (x['commonData']['requestId']['requestId'], parser.parse(x['commonData']['time']).timestamp(), x)) \
+        .foreachRDD(print_rdd)
+
+
+def trace_user(json_stream: DStream):
+    json_stream.map(
+        lambda x: (x['commonData']['userId']['userId'], parser.parse(x['commonData']['time']).timestamp(), x)) \
+        .foreachRDD(print_rdd)
 
 
 def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream], terminations=None, app_name=None):
@@ -149,6 +181,8 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
 
     raw_stream = stream.map(try_to_parse)
     json_stream = raw_stream.filter(lambda x: x[0]).map(lambda x: x[1])
+    trace_logs(json_stream)
+    trace_user(json_stream)
 
     # stream to report of incorrect messages
     incorrect_data_stream = raw_stream.filter(lambda x: not x[0]).map(lambda x: x[1]).foreachRDD(print_rdd)
@@ -168,6 +202,7 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
         .map((lambda x: (x['commonData']['userId']['userId'], x))) \
         .map(map_catalog_logs_to_state)
 
+    catalog_main_page_look_up_times(catalog_stream)
     # catalog_stream = json_stream.filter(lambda x: x["commonData"]["serverName"] == "Catalog")
 
     # login_stream.foreachRDD(terminations['login'])
