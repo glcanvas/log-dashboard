@@ -9,6 +9,7 @@ from typing import Callable
 import time
 from dateutil import parser
 import datetime
+from pyspark.streaming.kafka import KafkaUtils
 
 
 def print_rdd(rdd):
@@ -216,8 +217,10 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
 if __name__ == "__main__":
     # Create a local StreamingContext with two working thread and batch interval of 1 second
     env_dir = tempfile.mkdtemp()
+    builder = lambda context: KafkaUtils.createStream(context, "172.23.0.8:2181", "logs", {"topic": 1})
+    local_builder = lambda context: context.textFileStream("file:" + env_dir)
 
-    spark = initialize_spark("local[2]", lambda context: context.textFileStream("file:" + env_dir), {
+    spark = initialize_spark("spark://spark:7077", local_builder, {
         "login": print_rdd
     }, "log-dashboard-spark")
 

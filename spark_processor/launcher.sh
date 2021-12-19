@@ -1,0 +1,1 @@
+/usr/bin/python3.7 /opt/bitnami/spark/main.py
