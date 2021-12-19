@@ -10,7 +10,9 @@ import time
 from dateutil import parser
 import datetime
 from pyspark.streaming.kafka import KafkaUtils
-
+import os
+import findspark
+findspark.init()
 
 def print_rdd(rdd):
     rdd = rdd.take(100)
@@ -216,14 +218,19 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
 
 if __name__ == "__main__":
     # Create a local StreamingContext with two working thread and batch interval of 1 second
-    env_dir = tempfile.mkdtemp()
-    builder = lambda context: KafkaUtils.createStream(context, "172.23.0.8:2181", "logs", {"topic": 1})
-    local_builder = lambda context: context.textFileStream("file:" + env_dir)
 
-    spark = initialize_spark("spark://spark:7077", local_builder, {
+    zookeeper_path = os.environ['ZOOKEEPER_PATH']
+    spark_path = os.environ['SPARK_PATH']
+    print(os.environ)
+
+    builder = lambda context: KafkaUtils.createStream(context, zookeeper_path, "logs", {"topic": 1})
+    # local_builder = lambda context: context.textFileStream("file:" + env_dir)
+
+    spark = initialize_spark("spark://spark:7077", builder, {
         "login": print_rdd
     }, "log-dashboard-spark")
 
+    """
     with open("/Users/nduginets/PycharmProjects/log-dashboard/test/correct_login_test.txt", "r") as f:
         lines = f.readlines()
 
@@ -234,6 +241,7 @@ if __name__ == "__main__":
         time.sleep(1)
 
     print("finish write  to file")
+    """
 
-    spark.awaitTermination(10)
-    shutil.rmtree(env_dir)
+    # spark.awaitTermination(10)
+    # shutil.rmtree(env_dir)
