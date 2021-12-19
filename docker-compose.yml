@@ -14,7 +14,7 @@ services:
       clickhouse-network:
         ipv4_address: 172.23.0.8
   kafka:
-    image: confluentinc/cp-kafka
+    image: wurstmeister/kafka
     ports:
       - 9094:9094
       - 9092:9092
@@ -26,6 +26,10 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CREATE_TOPICS: "gen-logs:1:1"
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.5
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
@@ -38,9 +42,14 @@ services:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
-      - KAFKA_CLUSTERS_0_READONLY=true
+      # - KAFKA_CLUSTERS_0_READONLY=true
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.6
   clickhouse01:
     image: yandex/clickhouse-server
+    # links:
+    #   - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.11
@@ -52,12 +61,15 @@ services:
       nproc: 65535
     depends_on:
       - zookeeper
+      - kafka
     volumes:
       - ./clickhouse01:/etc/clickhouse-server
     environment:
       KAFKA_BROKER: "kafka:9092"
   clickhouse02:
     image: yandex/clickhouse-server
+    # links:
+    #   - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.12
@@ -69,12 +81,15 @@ services:
       nproc: 65535
     depends_on:
       - zookeeper
+      - kafka
     volumes:
       - ./clickhouse02:/etc/clickhouse-server
     environment:
       KAFKA_BROKER: "kafka:9092"
   clickhouse03:
     image: yandex/clickhouse-server
+    # links:
+    #   - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.13
@@ -86,12 +101,15 @@ services:
       nproc: 65535
     depends_on:
       - zookeeper
+      - kafka
     volumes:
       - ./clickhouse03:/etc/clickhouse-server
     environment:
       KAFKA_BROKER: "kafka:9092"
   clickhouse04:
     image: yandex/clickhouse-server
+    links:
+      - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.14
@@ -103,6 +121,7 @@ services:
       nproc: 65535
     depends_on:
       - zookeeper
+      - kafka
     volumes:
       - ./clickhouse04:/etc/clickhouse-server
     environment:
@@ -126,6 +145,9 @@ services:
     network_mode: host
     environment:
       KAFKA_BROKER: "localhost:9094"
+    # networks:
+    #   clickhouse-network:
+    #     ipv4_address: 172.23.0.50
 
 networks:
   clickhouse-network:
