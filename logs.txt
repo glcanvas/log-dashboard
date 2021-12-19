@@ -86,8 +86,9 @@ c) request_id, user_id, response: {ok, error}
 все логи имеют формат json
 {
 "log_level": "D",
-"user_id": "1488",
+"user_id": "100",
 "server_name": "auth-server",
-"product_id": "product-228"
 "time": "2007-01-13T23:23:23.000Z"
+"request_id": "1",
+"password_hash": "some-hash-1234"
 }

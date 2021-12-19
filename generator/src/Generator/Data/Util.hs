@@ -1,6 +1,7 @@
 module Generator.Data.Util
   ( deriveToJSON
   , genName
+  , AesonType (..)
   ) where
 
 import Universum
@@ -14,16 +15,21 @@ import Data.Char (isLower, toLower)
 import Hedgehog (MonadGen)
 import Language.Haskell.TH.Syntax (Dec, Name, Q)
 
-generatorAesonOptions :: Options
-generatorAesonOptions = defaultOptions
+data AesonType = MultipleF | OneF
+
+generatorAesonOptions :: AesonType -> Options
+generatorAesonOptions t = defaultOptions
   { fieldLabelModifier = \fieldName ->
       dropWhile (\c -> isLower c || c == '_') fieldName & \case
         a : as -> toLower a : as
         [] -> error "Failed to construct field: " <> fieldName
+  , unwrapUnaryRecords = case t of
+      OneF -> True
+      _ -> False
   }
 
-deriveToJSON :: Name -> Q [Dec]
-deriveToJSON = DAT.deriveToJSON generatorAesonOptions
+deriveToJSON :: Name -> AesonType -> Q [Dec]
+deriveToJSON n t = DAT.deriveToJSON (generatorAesonOptions t) n
 
 genName :: MonadGen m => m Text
-genName = Gen.text (Range.linear 1 30) Gen.unicode
+genName = Gen.text (Range.linear 1 30) Gen.alphaNum

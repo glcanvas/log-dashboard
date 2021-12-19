@@ -82,9 +82,6 @@ library:
     - hedgehog
     - hw-kafka-client
     - lens
-    - loot-config
-    - optparse-applicative
-    - parser-combinators
     - random
     - rio
     - say
@@ -94,8 +91,6 @@ library:
     - text
     - time
     - unliftio-core
-    - unordered-containers
-    - yaml
 
 executables:
   generator:
@@ -107,5 +102,4 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - generator
-      - optparse-applicative
       - rio-orphans

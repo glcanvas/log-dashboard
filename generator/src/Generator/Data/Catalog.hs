@@ -42,20 +42,20 @@ import Universum
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import Hedgehog (MonadGen)
 import Control.Lens (makeLenses)
+import Hedgehog (MonadGen)
 
-import Generator.Data.Util (deriveToJSON, genName)
-import Generator.Data.Common (Status (..), genStatus)
+import Generator.Data.Common (Status(..), genStatus)
+import Generator.Data.Util (AesonType(..), deriveToJSON, genName)
 
 newtype Price = Price {unPrice :: Int}
-deriveToJSON 'Price
+deriveToJSON 'Price OneF
 
 genPrice :: MonadGen m => m Price
 genPrice = Price <$> Gen.integral (Range.constant 1 1000000)
 
 newtype ProductId = ProductId {unProductId :: Int}
-deriveToJSON 'ProductId
+deriveToJSON 'ProductId OneF
 
 genProductId :: MonadGen m => m ProductId
 genProductId = ProductId <$> Gen.integral (Range.constant 1 1000000)
@@ -66,7 +66,7 @@ data ProductData = ProductData
   , _pPrice :: Price
   }
 makeLenses ''ProductData
-deriveToJSON 'ProductData
+deriveToJSON 'ProductData MultipleF
 
 genProductData :: MonadGen m => Maybe ProductId -> m ProductData
 genProductData pId = do
@@ -77,14 +77,14 @@ genProductData pId = do
 
 data ProductRequest = ProductRequest {_prProductId :: ProductId}
 makeLenses ''ProductRequest
-deriveToJSON 'ProductRequest
+deriveToJSON 'ProductRequest MultipleF
 
 genProductRequest :: MonadGen m => m ProductRequest
 genProductRequest = ProductRequest <$> genProductId
 
 data ProductDbRequest = ProductDbRequest {_pdrQuery :: Text}
 makeLenses ''ProductDbRequest
-deriveToJSON 'ProductDbRequest
+deriveToJSON 'ProductDbRequest MultipleF
 
 genProductDbRequest :: ProductId -> ProductDbRequest
 genProductDbRequest (ProductId pId) = ProductDbRequest $
@@ -95,7 +95,7 @@ data ProductDbReply = ProductDbReply
   , _pdrepStatus :: Status
   }
 makeLenses ''ProductDbReply
-deriveToJSON 'ProductDbReply
+deriveToJSON 'ProductDbReply MultipleF
 
 genProductDbReply :: MonadGen m => ProductId -> m ProductDbReply
 genProductDbReply pId = do
@@ -106,7 +106,7 @@ genProductDbReply pId = do
 
 data LinkedProductsDbRequest = LinkedProductsDbRequest {_lpdrQuery :: Text}
 makeLenses ''LinkedProductsDbRequest
-deriveToJSON 'LinkedProductsDbRequest
+deriveToJSON 'LinkedProductsDbRequest MultipleF
 
 genLinkedProductsDbRequest :: ProductId -> LinkedProductsDbRequest
 genLinkedProductsDbRequest (ProductId pId) = LinkedProductsDbRequest $
@@ -117,7 +117,7 @@ data LinkedProductsDbReply = LinkedProductsDbReply
   , _lpdrepStatus :: Status
   }
 makeLenses ''LinkedProductsDbReply
-deriveToJSON 'LinkedProductsDbReply
+deriveToJSON 'LinkedProductsDbReply MultipleF
 
 genLinkedProductsDbReply :: MonadGen m => m LinkedProductsDbReply
 genLinkedProductsDbReply = do
@@ -129,11 +129,11 @@ genLinkedProductsDbReply = do
       pure s
 
 data CatalogRequest = CatalogRequest
-deriveToJSON 'CatalogRequest
+deriveToJSON 'CatalogRequest MultipleF
 
 data CatalogDbRequest = CatalogDbRequest {_cdrQuery :: Text}
 makeLenses ''CatalogDbRequest
-deriveToJSON 'CatalogDbRequest
+deriveToJSON 'CatalogDbRequest MultipleF
 
 genCatalogDbRequest :: CatalogDbRequest
 genCatalogDbRequest = CatalogDbRequest "select * from products"
@@ -143,7 +143,7 @@ data CatalogDbReply = CatalogDbReply
   , _cdrepStatus :: Status
   }
 makeLenses ''CatalogDbReply
-deriveToJSON 'CatalogDbReply
+deriveToJSON 'CatalogDbReply MultipleF
 
 genCatalogDbReply :: MonadGen m => m CatalogDbReply
 genCatalogDbReply = do
