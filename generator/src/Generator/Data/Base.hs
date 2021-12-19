@@ -18,6 +18,10 @@ module Generator.Data.Base
 
   , genCatalogAction
   , genCatalogList
+
+  , genOrder
+
+  , genPayment
   ) where
 
 import Universum
@@ -41,12 +45,19 @@ import Generator.Data.Login
   (LoginDbRequest, LoginReply, LoginRequest, LogoutDbRequest, LogoutReply, LogoutRequest(..),
   genLoginDbRequest, genLoginReply, genLoginRequest, genLogoutDbRequest, genLogoutReply,
   lreqPasswordHash)
+import Generator.Data.Order
+  (OrderActionDbReply, OrderActionDbRequest, OrderActionRequest(..), OrderDetailsRequest,
+  genOrderActionDbReply, genOrderActionDbRequest, genOrderActionRequest, genOrderDetailsRequest)
+import Generator.Data.Payment
+  (PaymentCredentialsReply, PaymentCredentialsRequest, PaymentRequest, genPaymentCredentialsReply,
+  genPaymentCredentialsRequest, genPaymentRequest)
 import Generator.Data.Util (AesonType(..), deriveToJSON)
 
 data ActionType
   = LoginReq
   | LoginDbReq
   | LoginRep
+
   | LogoutReq
   | LogoutDbReq
   | LogoutRep
@@ -68,6 +79,15 @@ data ActionType
   | CardListReq
   | CardListRedisReq
   | CardListRedisRep
+
+  | OrderActionReq
+  | OrderDetailsReq
+  | OrderActionDbReq
+  | OrderActionDbRep
+
+  | PaymentReq
+  | PaymentCredentialsReq
+  | PaymentCredentialsRep
 deriveToJSON ''ActionType MultipleF
 
 data CommonData = CommonData
@@ -233,4 +253,55 @@ genCatalogList userId = do
     ( Data CardListReq commonData cardListRequest
     , Data CardListRedisReq commonData cardListRedisRequest
     , Data CardListRedisRep commonData cardListRedisReply
+    )
+
+genOrder
+  :: UserId
+  -> IO
+     ( Data OrderActionRequest
+     , Data OrderDetailsRequest
+     , Data OrderActionDbRequest
+     , Data OrderActionDbReply
+     )
+genOrder userId = do
+  requestId <- sample genRequestId
+  time <- getCurrentTime
+  let commonData = CommonData
+        { _cdLogLevel = Info
+        , _cdServerName = Card
+        , _cdTime = time
+        , _cdUserId = userId
+        , _cdRequestId = requestId
+        }
+  orderActionRequest@OrderActionRequest{..} <- sample genOrderActionRequest
+  let orderDetailsRequest = genOrderDetailsRequest _oarOrderId
+      orderActionDbRequest = genOrderActionDbRequest userId _oarOrderId _oarActionType
+  orderActionDbReply <- sample genOrderActionDbReply
+  pure
+    ( Data OrderActionReq commonData orderActionRequest
+    , Data OrderDetailsReq commonData orderDetailsRequest
+    , Data OrderActionDbReq commonData orderActionDbRequest
+    , Data OrderActionDbRep commonData orderActionDbReply
+    )
+
+genPayment
+  :: UserId
+  -> IO (Data PaymentRequest, Data PaymentCredentialsRequest, Data PaymentCredentialsReply)
+genPayment userId = do
+  requestId <- sample genRequestId
+  time <- getCurrentTime
+  let commonData = CommonData
+        { _cdLogLevel = Info
+        , _cdServerName = Card
+        , _cdTime = time
+        , _cdUserId = userId
+        , _cdRequestId = requestId
+        }
+  paymentRequest <- sample genPaymentRequest
+  paymentCredentialsRequest <- sample genPaymentCredentialsRequest
+  paymentCredentialsReply <- sample genPaymentCredentialsReply
+  pure
+    ( Data PaymentReq commonData paymentRequest
+    , Data PaymentCredentialsReq commonData paymentCredentialsRequest
+    , Data PaymentCredentialsRep commonData paymentCredentialsReply
     )
