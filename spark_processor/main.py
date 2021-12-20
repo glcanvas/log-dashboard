@@ -1,27 +1,14 @@
-from pyspark import SparkContext, StorageLevel
+from pyspark import SparkContext
 from pyspark.streaming import StreamingContext, DStream
-import tempfile
-import os
-import threading
-import shutil
 import json
 from typing import Callable
-import time
 from dateutil import parser
 import datetime
-from pyspark.streaming.kafka import KafkaUtils
 import os
-import findspark
-findspark.init()
+
+from pyspark.streaming.kafka import KafkaUtils
 
 
-
-sc = SparkContext("spark://spark:7077", "app")
-ssc = StreamingContext(sc, 1)
-stream = KafkaUtils.createStream(ssc, ["kafka:9092"], "logs", {"numtest": 1})
-stream.pprint(100)
-
-"""
 def print_rdd(rdd):
     rdd = rdd.take(100)
     for i in rdd:
@@ -238,8 +225,5 @@ if __name__ == "__main__":
         "login": print_rdd
     }, "log-dashboard-spark")
 
-    # spark.awaitTermination(10)
+    spark.awaitTermination()
     # shutil.rmtree(env_dir)
-
-"""
-
