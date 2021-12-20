@@ -5,8 +5,21 @@ from typing import Callable
 from dateutil import parser
 import datetime
 import os
+from json import dumps
+from kafka import KafkaProducer, KafkaConsumer
 
 from pyspark.streaming.kafka import KafkaUtils
+
+
+def dump_to_kafka(producer: KafkaProducer):
+    def inner(rdd):
+        items = []
+        for (k, v) in rdd.collect():
+            items.append(producer.send("spark-output", {"key": k, "value": v}))
+        for i in items:
+            i.get()
+
+    return inner
 
 
 def print_rdd(rdd):
@@ -129,7 +142,7 @@ def count_online_users(login_stream: DStream):
         .filter(lambda kv: kv[1][0] == LOGIN_DB_RESPONSE) \
         .count() \
         .map(lambda c: (datetime.datetime.now(), c)) \
-        .foreachRDD(print_rdd)
+        .foreachRDD(dump_to_kafka)
 
 
 def users_spend_time_online(login_stream: DStream):
@@ -140,7 +153,7 @@ def users_spend_time_online(login_stream: DStream):
         .updateStateByKey(lambda new_value, old_state: users_logout_state(new_value, old_state))
 
     log_in.join(log_out).map(lambda kv: (kv[0], datetime.datetime.now(), abs(kv[1][0][3] - kv[1][1][3]))) \
-        .foreachRDD(print_rdd)
+        .foreachRDD(dump_to_kafka)
 
 
 def fail_login(login_stream: DStream):
@@ -149,29 +162,29 @@ def fail_login(login_stream: DStream):
         .groupByKeyAndWindow(30, 1) \
         .map(lambda kv: (kv[0], datetime.datetime.now(), len([i for i in kv[1]]))) \
         .filter(lambda kv: kv[2] > 3) \
-        .foreachRDD(print_rdd)
+        .foreachRDD(dump_to_kafka)
 
 
 def catalog_main_page_look_up_times(catalog_stream: DStream):
     catalog_stream \
         .updateStateByKey(lambda new_value, old_value: 1 if old_value is None else old_value + 1) \
         .map(lambda c: (datetime.datetime.now(), c, "!!!")) \
-        .foreachRDD(print_rdd)
+        .foreachRDD(dump_to_kafka)
 
 
 def trace_logs(json_stream: DStream):
     json_stream.map(
         lambda x: (x['commonData']['requestId']['requestId'], parser.parse(x['commonData']['time']).timestamp(), x)) \
-        .foreachRDD(print_rdd)
+        .foreachRDD(dump_to_kafka)
 
 
 def trace_user(json_stream: DStream):
     json_stream.map(
         lambda x: (x['commonData']['userId']['userId'], parser.parse(x['commonData']['time']).timestamp(), x)) \
-        .foreachRDD(print_rdd)
+        .foreachRDD(dump_to_kafka)
 
 
-def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream], app_name=None):
+def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream], app_name, producer: KafkaProducer):
     sc = SparkContext(master, app_name)
     ssc = StreamingContext(sc, 1)
     ssc.checkpoint("checkpoints")
@@ -183,7 +196,7 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
     trace_user(json_stream)
 
     # stream to report of incorrect messages
-    incorrect_data_stream = raw_stream.filter(lambda x: not x[0]).map(lambda x: x[1]).foreachRDD(print_rdd)
+    raw_stream.filter(lambda x: not x[0]).map(lambda x: x[1]).foreachRDD(dump_to_kafka)
 
     # streams of online users, and failures
     login_stream = json_stream.filter(lambda x: x["commonData"]["serverName"] == "Login") \
@@ -194,17 +207,13 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
     count_online_users(login_stream)
     fail_login(login_stream)
     users_spend_time_online(login_stream)
-    # todo add view time
 
     catalog_stream = json_stream.filter(lambda x: x["commonData"]["serverName"] == "Catalog") \
         .map((lambda x: (x['commonData']['userId']['userId'], x))) \
         .map(map_catalog_logs_to_state)
 
     catalog_main_page_look_up_times(catalog_stream)
-    # catalog_stream = json_stream.filter(lambda x: x["commonData"]["serverName"] == "Catalog")
-
-    # login_stream.foreachRDD(terminations['login'])
-    # catalog_stream.foreachRDD(print_rdd)
+    catalog_stream.foreachRDD(print_rdd)
 
     ssc.start()
 
@@ -212,13 +221,13 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
 
 
 if __name__ == "__main__":
-
-    zookeeper_path = os.environ['ZOOKEEPER_PATH']
+    kafka_paths = os.environ['KAFKA_PATH']
     spark_path = os.environ['SPARK_PATH']
-    print(os.environ)
+    consumer = KafkaProducer(bootstrap_servers=kafka_paths.split(","),
+                             value_serializer=lambda x: dumps(x).encode('utf-8'))
 
-    builder = lambda context: KafkaUtils.createStream(context, zookeeper_path, "logs", {"log-topic": 1})
+    builder = lambda context: KafkaUtils.createStream(context, kafka_paths, "logs", {"log-topic": 1})
 
-    spark = initialize_spark(spark_path, builder, "log-dashboard-spark")
+    spark = initialize_spark(spark_path, builder, "log-dashboard-spark", consumer)
 
     spark.awaitTermination()
