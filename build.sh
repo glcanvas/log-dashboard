@@ -12,10 +12,11 @@ cp users.xml clickhouse02/users.xml
 cp users.xml clickhouse03/users.xml
 cp users.xml clickhouse04/users.xml
 
+# build image for spark dependencies
+docker build -t klntsky/spark-env:1.0 ./spark-env
+
 # build image for generator dependencies
-cd generator-env
-docker build -t klntsky/generator-env:1.0 .
-cd ..
+docker build -t klntsky/generator-env:1.0 ./generator-env
 
 # build image with generater based on dependencies image
 docker build -t klntsky/generator:1.0 .

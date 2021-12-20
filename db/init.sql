@@ -1,5 +1,6 @@
 SELECT cluster, shard_num, host_name, host_address, port, is_local FROM system.clusters;
 
+drop database if exists db on cluster webshop;
 CREATE DATABASE db ON CLUSTER webshop;
 
 -- request_trace
@@ -68,7 +69,7 @@ FROM db.distr_user_trace_kafka;
 
 CREATE TABLE IF NOT EXISTS db.online_user ON CLUSTER webshop
 (
-    count Int64,
+    user_id Int64,
     time DateTime
 )
 ENGINE = MergeTree()
@@ -77,7 +78,12 @@ ORDER BY (time);
 
 CREATE TABLE db.distr_online_user
 ON CLUSTER webshop AS db.online_user
-  ENGINE = Distributed(webshop, db, online_user, xxHash64(count));
+  ENGINE = Distributed(webshop, db, online_user, xxHash64(user_id));
+
+
+-- To test run:
+
+-- SELECT * FROM db.distr_online_user LIMIT 10;
 
 CREATE TABLE db.distr_online_user_kafka AS db.distr_online_user
 ENGINE = Kafka()
@@ -190,4 +196,5 @@ FROM db.distr_users_spend_time_online_kafka;
 
 -- Use this to test kafka:
 -- it will allow running SELECT on kafka streams as tables
+
 -- SET stream_like_engine_allow_direct_select = true;

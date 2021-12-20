@@ -26,7 +26,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CREATE_TOPICS: "gen-logs:1:1"
+      KAFKA_CREATE_TOPICS: "gen-logs:1:1,online_user:1:1"
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.5
@@ -129,8 +129,12 @@ services:
   clickhouse-client:
     image: yandex/clickhouse-client
     depends_on:
-      - "clickhouse01"
-    command: [ '--host', 'clickhouse01' ]
+      - clickhouse01
+      - pyspark
+      - zookeeper
+    volumes:
+      - ./db:/db
+    entrypoint: /bin/bash /db/go.sh
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.9
@@ -154,56 +158,80 @@ services:
     # networks:
     #   clickhouse-network:
     #     ipv4_address: 172.23.0.50
-  spark:
-    image: docker.io/bitnami/spark:3
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
+
+  pyspark:
+    image: klntsky/spark-env:1.0 # see build.sh, it's build on top of
+    # jupyter/pyspark-notebook:latest
+    hostname: pyspark
+    container_name: pyspark
     ports:
-      - '18080:8080'
-      - "7077:7077"
-  spark-worker_1:
-    image: docker.io/bitnami/spark:3
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-  spark-worker_2:
-    image: docker.io/bitnami/spark:3
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-  spark-worker_3:
-    image: docker.io/bitnami/spark:3
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-  spark-processor:
-    image: nduginets/log-pyspark:1.0
-    depends_on: [ spark, kafka ]
-    environment:
-      - ZOOKEEPER_PATH=zookeeper:2181
-      - SPARK_PATH=spark://spark:7077
+      - 8888:8888
+      - 4040:4040
+    depends_on:
+      - kafka
+      - zookeeper
+      - generator
+      - clickhouse01
+      - clickhouse02
+      - clickhouse03
+      - clickhouse04
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.7
+    entrypoint: /usr/bin/env python /spark/run.py
+    volumes:
+      - ./spark:/spark
+
+  # spark:
+  #   image: docker.io/bitnami/spark:3
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   ports:
+  #     - '18080:8080'
+  #     - "7077:7077"
+  # spark-worker_1:
+  #   image: docker.io/bitnami/spark:3
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_WORKER_CORES=1
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  # spark-worker_2:
+  #   image: docker.io/bitnami/spark:3
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_WORKER_CORES=1
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  # spark-worker_3:
+  #   image: docker.io/bitnami/spark:3
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_WORKER_CORES=1
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  # spark-processor:
+  #   image: nduginets/log-pyspark:1.0
+  #   depends_on: [ spark, kafka ]
+  #   environment:
+  #     - ZOOKEEPER_PATH=zookeeper:2181
+  #     - SPARK_PATH=spark://spark:7077
 
 networks:
   clickhouse-network:
