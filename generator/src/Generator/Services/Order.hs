@@ -8,6 +8,7 @@ import Universum
 import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Aeson (encode)
 
+import Generator.Core.Requests (MonadRequest(..))
 import Generator.Data.Base (genOrder)
 import Generator.Data.Common (UserId(..))
 import Generator.Kafka (MonadKafka(..))
@@ -18,9 +19,10 @@ class Monad m => MonadOrder m where
 class HasOrder env where
   getOrderQueue :: env -> TQueue UserId
 
-instance (MonadIO m, Monad m, MonadKafka m) => MonadOrder m where
+instance (MonadIO m, Monad m, MonadKafka m, MonadRequest m) => MonadOrder m where
   orderActionE userId = do
-    (req, dReq, reqDb, rep) <- liftIO $ genOrder userId
+    request <- nextRequest
+    (req, dReq, reqDb, rep) <- liftIO $ genOrder userId request
     logKafka $ decodeUtf8 $ encode req
     logKafka $ decodeUtf8 $ encode dReq
     logKafka $ decodeUtf8 $ encode reqDb

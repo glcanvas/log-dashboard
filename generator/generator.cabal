@@ -20,6 +20,7 @@ library
   exposed-modules:
       Generator.Config.Def
       Generator.Config.Reading
+      Generator.Core.Requests
       Generator.Data.Base
       Generator.Data.Card
       Generator.Data.Catalog

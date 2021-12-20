@@ -19,7 +19,8 @@ import System.Environment.Blank (getEnv)
 
 import Generator.Config.Def
   (GeneratorConfig, GeneratorConfigRec, HasConfig(..), MonadConfig, option)
-import Generator.Data.Common (UserId)
+import Generator.Core.Requests (HasRequest(..), MonadRequest(..))
+import Generator.Data.Common (RequestId, UserId)
 import Generator.Kafka (HasKafka(..), MonadKafka(..), producerProps)
 import Generator.Services.Card (CardAction, HasCard(..), MonadCard(..))
 import Generator.Services.Catalog (CatalogAction, HasCatalog(..), MonadCatalog(..))
@@ -29,6 +30,7 @@ import Generator.Services.Payment (HasPayment(..), MonadPayment)
 
 data GeneratorContext = GeneratorContext
   { _gcUsers :: S.Set UserId
+  , _gcCurRequest :: TVar RequestId
 
   , _gcCatalogQueue :: TQueue CatalogAction
   , _gcLogoutQueue :: TQueue UserId
@@ -55,6 +57,7 @@ type GeneratorWorkMode m =
   , MonadConfig GeneratorConfig m
   , HasKafka GeneratorContext
   , MonadKafka m
+  , MonadRequest m
   , HasLogin GeneratorContext
   , HasCatalog GeneratorContext
   , HasCard GeneratorContext
@@ -69,21 +72,44 @@ type GeneratorWorkMode m =
 
 runGenerator :: GeneratorConfigRec -> Generator () -> IO ()
 runGenerator cfg action = do
-  q <- newTQueueIO
-  q' <- newTQueueIO
-  q'' <- newTQueueIO
-  q''' <- newTQueueIO
-  q'''' <- newTQueueIO
-  s <- S.newIO
+  users <- S.newIO
+  requests <- newTVarIO 0
+  catalogQueue <- newTQueueIO
+  logoutQueue  <- newTQueueIO
+  cardQueue <- newTQueueIO
+  orderQueue <- newTQueueIO
+  paymentQueue <- newTQueueIO
   mBroker <- getEnv "KAFKA_BROKER"
   let isKafka = cfg ^. option #kafka
       additionalBrokers =
         maybeToMonoid (brokersList . pure . BrokerAddress . T.pack <$> mBroker)
   if not isKafka
-  then runRIO (GeneratorContext s q q' q'' q''' q'''' cfg Nothing) action
+  then runRIO
+    ( GeneratorContext
+      users
+      requests
+      catalogQueue
+      logoutQueue
+      cardQueue
+      orderQueue
+      paymentQueue
+      cfg
+      Nothing
+    ) action
   else bracket (newProducer $ producerProps <> additionalBrokers) clProducer $ \case
     Left err -> putStrLn ((show err) :: Text)
-    Right prod -> runRIO (GeneratorContext s q q' q'' q''' q'''' cfg $ Just prod) action
+    Right prod -> runRIO
+      ( GeneratorContext
+        users
+        requests
+        catalogQueue
+        logoutQueue
+        cardQueue
+        orderQueue
+        paymentQueue
+        cfg $
+        Just prod
+      ) action
   where
     clProducer (Left _) = return ()
     clProducer (Right prod) = closeProducer prod
@@ -109,3 +135,6 @@ instance HasConfig GeneratorContext where
 
 instance HasKafka GeneratorContext where
   getProducer = (^. gcKafkaProducer)
+
+instance HasRequest GeneratorContext where
+  getCurRequest = (^. gcCurRequest)

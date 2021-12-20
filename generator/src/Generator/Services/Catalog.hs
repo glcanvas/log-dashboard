@@ -9,6 +9,7 @@ import Universum
 import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Aeson (encode)
 
+import Generator.Core.Requests (MonadRequest(..))
 import Generator.Data.Base (dData, genCatalogData, genProductDataC)
 import Generator.Data.Catalog (pdrepStatus)
 import Generator.Data.Common (Status(..), UserId(..))
@@ -23,14 +24,16 @@ class Monad m => MonadCatalog m where
 class HasCatalog env where
   getCatalogQueue :: env -> TQueue CatalogAction
 
-instance (MonadIO m, Monad m, MonadKafka m) => MonadCatalog m where
+instance (MonadIO m, Monad m, MonadKafka m, MonadRequest m) => MonadCatalog m where
   catalogVisit userId = do
-    (req, reqDb, rep) <- liftIO $ genCatalogData userId
+    request <- nextRequest
+    (req, reqDb, rep) <- liftIO $ genCatalogData userId request
     logKafka $ decodeUtf8 $ encode req
     logKafka $ decodeUtf8 $ encode reqDb
     logKafka $ decodeUtf8 $ encode rep
   productVisit userId = do
-    (req, reqDb, rep, mReqL, mReqDbL) <- liftIO $ genProductDataC userId
+    request <- nextRequest
+    (req, reqDb, rep, mReqL, mReqDbL) <- liftIO $ genProductDataC userId request
     logKafka $ decodeUtf8 $ encode req
     logKafka $ decodeUtf8 $ encode reqDb
     case (rep ^. dData . pdrepStatus, mReqL, mReqDbL) of

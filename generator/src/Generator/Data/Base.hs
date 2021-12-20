@@ -32,22 +32,24 @@ import Hedgehog.Gen (sample)
 
 import Generator.Data.Card
   (CardActionRedisReply, CardActionRedisRequest, CardActionRequest(..), CardListRedisReply,
-  CardListRedisRequest, CardListRequest(..), genCardAction, genCardActionRedisReply,
-  genCardActionRedisRequest, genCardListRedisReply, genCardListRedisRequest)
+  CardListRedisRequest, CardListRequest(..), carrepStatus, clrrepStatus, genCardAction,
+  genCardActionRedisReply, genCardActionRedisRequest, genCardListRedisReply,
+  genCardListRedisRequest)
 import Generator.Data.Catalog
   (CatalogDbReply, CatalogDbRequest, CatalogRequest(..), LinkedProductsDbReply,
-  LinkedProductsDbRequest, ProductDbReply, ProductDbRequest, ProductRequest, genCatalogDbReply,
-  genCatalogDbRequest, genLinkedProductsDbReply, genLinkedProductsDbRequest, genProductDbReply,
-  genProductDbRequest, genProductRequest, pdrepStatus, prProductId)
+  LinkedProductsDbRequest, ProductDbReply, ProductDbRequest, ProductRequest, cdrepStatus,
+  genCatalogDbReply, genCatalogDbRequest, genLinkedProductsDbReply, genLinkedProductsDbRequest,
+  genProductDbReply, genProductDbRequest, genProductRequest, lpdrepStatus, pdrepStatus, prProductId)
 import Generator.Data.Common
   (Level(..), RequestId, ServerName(..), Status(..), UserId, genRequestId, genUserId)
 import Generator.Data.Login
   (LoginDbRequest, LoginReply, LoginRequest, LogoutDbRequest, LogoutReply, LogoutRequest(..),
   genLoginDbRequest, genLoginReply, genLoginRequest, genLogoutDbRequest, genLogoutReply,
-  lreqPasswordHash)
+  lorepStatus, lrepStatus, lreqPasswordHash)
 import Generator.Data.Order
   (OrderActionDbReply, OrderActionDbRequest, OrderActionRequest(..), OrderDetailsRequest,
-  genOrderActionDbReply, genOrderActionDbRequest, genOrderActionRequest, genOrderDetailsRequest)
+  genOrderActionDbReply, genOrderActionDbRequest, genOrderActionRequest, genOrderDetailsRequest,
+  oadrepStatus)
 import Generator.Data.Payment
   (PaymentCredentialsReply, PaymentCredentialsRequest, PaymentRequest, genPaymentCredentialsReply,
   genPaymentCredentialsRequest, genPaymentRequest)
@@ -108,10 +110,9 @@ data Data a = Data
 makeLenses ''Data
 deriveToJSON 'Data MultipleF
 
-genLoginData :: IO (Data LoginRequest, Data LoginDbRequest, Data LoginReply)
-genLoginData = do
+genLoginData :: RequestId -> IO (Data LoginRequest, Data LoginDbRequest, Data LoginReply)
+genLoginData requestId = do
   userId <- sample genUserId
-  requestId <- sample genRequestId
   loginRequest <- sample genLoginRequest
   let loginDbRequest = genLoginDbRequest userId $ loginRequest ^. lreqPasswordHash
   loginReply <- sample genLoginReply
@@ -125,13 +126,12 @@ genLoginData = do
         }
   pure
     ( Data LoginReq commonData loginRequest
-    , Data LoginDbReq commonData loginDbRequest
-    , Data LoginRep commonData loginReply
+    , Data LoginDbReq commonData{_cdLogLevel = Debug} loginDbRequest
+    , Data LoginRep commonData{_cdLogLevel = if loginReply ^. lrepStatus == Invalid then Error else Debug} loginReply
     )
 
-genLogoutData :: UserId -> IO (Data LogoutRequest, Data LogoutDbRequest, Data LogoutReply)
-genLogoutData userId = do
-  requestId <- sample genRequestId
+genLogoutData :: RequestId -> UserId -> IO (Data LogoutRequest, Data LogoutDbRequest, Data LogoutReply)
+genLogoutData requestId userId = do
   let logoutRequest = LogoutRequest
   let logoutDbRequest = genLogoutDbRequest userId
   logoutReply <- sample genLogoutReply
@@ -145,12 +145,13 @@ genLogoutData userId = do
         }
   pure
     ( Data LogoutReq commonData logoutRequest
-    , Data LogoutDbReq commonData logoutDbRequest
-    , Data LogoutRep commonData logoutReply
+    , Data LogoutDbReq commonData{_cdLogLevel = Debug} logoutDbRequest
+    , Data LogoutRep commonData{_cdLogLevel = if logoutReply ^. lorepStatus == Invalid then Error else Debug} logoutReply
     )
 
 genProductDataC
   :: UserId
+  -> RequestId
   -> IO
      ( Data ProductRequest
      , Data ProductDbRequest
@@ -158,8 +159,7 @@ genProductDataC
      , Maybe (Data LinkedProductsDbRequest)
      , Maybe (Data LinkedProductsDbReply)
      )
-genProductDataC userId = do
-  requestId <- sample genRequestId
+genProductDataC userId requestId = do
   productRequest <- sample genProductRequest
   let pid = productRequest ^. prProductId
   let productDbRequest = genProductDbRequest pid
@@ -175,8 +175,8 @@ genProductDataC userId = do
   case productDbReply ^. pdrepStatus of
     Invalid -> pure
       ( Data CatalogProductReq commonData productRequest
-      , Data CatalogProductDbReq commonData productDbRequest
-      , Data CatalogProductDbRep commonData productDbReply
+      , Data CatalogProductDbReq commonData{_cdLogLevel = Debug} productDbRequest
+      , Data CatalogProductDbRep commonData{_cdLogLevel = if productDbReply ^. pdrepStatus == Invalid then Error else Debug} productDbReply
       , Nothing
       , Nothing
       )
@@ -185,15 +185,14 @@ genProductDataC userId = do
       linkedProductsDbReply <- sample genLinkedProductsDbReply
       pure
         ( Data CatalogProductReq commonData productRequest
-        , Data CatalogProductDbReq commonData productDbRequest
-        , Data CatalogProductDbRep commonData productDbReply
-        , Just $ Data CatalogLinkedProductsDbReq commonData linkedProductsDbRequest
-        , Just $ Data CatalogLinkedProductsDbRep commonData linkedProductsDbReply
+        , Data CatalogProductDbReq commonData{_cdLogLevel = Debug} productDbRequest
+        , Data CatalogProductDbRep commonData{_cdLogLevel = if productDbReply ^. pdrepStatus == Invalid then Error else Debug} productDbReply
+        , Just $ Data CatalogLinkedProductsDbReq commonData{_cdLogLevel = Debug} linkedProductsDbRequest
+        , Just $ Data CatalogLinkedProductsDbRep commonData{_cdLogLevel = if linkedProductsDbReply ^. lpdrepStatus == Invalid then Error else Debug} linkedProductsDbReply
         )
 
-genCatalogData :: UserId -> IO (Data CatalogRequest, Data CatalogDbRequest, Data CatalogDbReply)
-genCatalogData userId = do
-  requestId <- sample genRequestId
+genCatalogData :: UserId -> RequestId -> IO (Data CatalogRequest, Data CatalogDbRequest, Data CatalogDbReply)
+genCatalogData userId requestId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -207,15 +206,15 @@ genCatalogData userId = do
   catalogDbReply <- sample genCatalogDbReply
   pure
     ( Data CatalogReq commonData catalogRequest
-    , Data CatalogDbReq commonData catalogDbRequest
-    , Data CatalogDbRep commonData catalogDbReply
+    , Data CatalogDbReq commonData{_cdLogLevel = Debug} catalogDbRequest
+    , Data CatalogDbRep commonData{_cdLogLevel = if catalogDbReply ^. cdrepStatus == Invalid then Error else Debug} catalogDbReply
     )
 
 genCatalogAction
   :: UserId
+  -> RequestId
   -> IO (Data CardActionRequest, Data CardActionRedisRequest, Data CardActionRedisReply)
-genCatalogAction userId = do
-  requestId <- sample genRequestId
+genCatalogAction userId requestId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -229,15 +228,15 @@ genCatalogAction userId = do
   cardActionRedisReply <- sample genCardActionRedisReply
   pure
     ( Data CardActionReq commonData cardAction
-    , Data CardActionRedisReq commonData cardActionRedisRequest
-    , Data CardActionRedisRep commonData cardActionRedisReply
+    , Data CardActionRedisReq commonData{_cdLogLevel = Debug} cardActionRedisRequest
+    , Data CardActionRedisRep commonData{_cdLogLevel = if cardActionRedisReply ^. carrepStatus == Invalid then Error else Debug} cardActionRedisReply
     )
 
 genCatalogList
   :: UserId
+  -> RequestId
   -> IO (Data CardListRequest, Data CardListRedisRequest, Data CardListRedisReply)
-genCatalogList userId = do
-  requestId <- sample genRequestId
+genCatalogList userId requestId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -251,20 +250,20 @@ genCatalogList userId = do
   cardListRedisReply <- sample genCardListRedisReply
   pure
     ( Data CardListReq commonData cardListRequest
-    , Data CardListRedisReq commonData cardListRedisRequest
-    , Data CardListRedisRep commonData cardListRedisReply
+    , Data CardListRedisReq commonData{_cdLogLevel = Debug} cardListRedisRequest
+    , Data CardListRedisRep commonData{_cdLogLevel = if cardListRedisReply ^. clrrepStatus == Invalid then Error else Debug} cardListRedisReply
     )
 
 genOrder
   :: UserId
+  -> RequestId
   -> IO
      ( Data OrderActionRequest
      , Data OrderDetailsRequest
      , Data OrderActionDbRequest
      , Data OrderActionDbReply
      )
-genOrder userId = do
-  requestId <- sample genRequestId
+genOrder userId requestId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -280,15 +279,15 @@ genOrder userId = do
   pure
     ( Data OrderActionReq commonData orderActionRequest
     , Data OrderDetailsReq commonData orderDetailsRequest
-    , Data OrderActionDbReq commonData orderActionDbRequest
-    , Data OrderActionDbRep commonData orderActionDbReply
+    , Data OrderActionDbReq commonData{_cdLogLevel = Debug} orderActionDbRequest
+    , Data OrderActionDbRep commonData{_cdLogLevel = if orderActionDbReply ^. oadrepStatus == Invalid then Error else Debug} orderActionDbReply
     )
 
 genPayment
   :: UserId
+  -> RequestId
   -> IO (Data PaymentRequest, Data PaymentCredentialsRequest, Data PaymentCredentialsReply)
-genPayment userId = do
-  requestId <- sample genRequestId
+genPayment userId requestId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
