@@ -4,8 +4,10 @@ module Generator.Data.Common
   , UserId (..)
   , RequestId (..)
   , Status (..)
+  , OrderId (..)
 
   , genUserId
+  , genOrderId
   , genStatus
   , genRequestId
   ) where
@@ -22,7 +24,7 @@ import Generator.Data.Util (AesonType(..), deriveToJSON)
 data Level = Error | Warning | Info | Debug
 deriveToJSON ''Level MultipleF
 
-data ServerName = Login | Catalog
+data ServerName = Login | Catalog | Card
 deriveToJSON ''ServerName MultipleF
 
 newtype UserId = UserId { unUserId :: Int }
@@ -31,6 +33,12 @@ deriveToJSON 'UserId OneF
 
 genUserId :: MonadGen m => m UserId
 genUserId = UserId <$> Gen.integral (Range.constant 0 1000000)
+
+newtype OrderId = OrderId {unOrderId :: Int}
+deriveToJSON ''OrderId OneF
+
+genOrderId :: MonadGen m => m OrderId
+genOrderId = OrderId <$> Gen.integral (Range.constant 0 1000000)
 
 newtype RequestId = RequestId { unRequestId :: Int }
 deriveToJSON 'RequestId OneF

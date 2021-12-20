@@ -4,4 +4,4 @@ RUN apt-get -y update
 RUN apt-get -y install librdkafka-dev
 WORKDIR "/generator"
 RUN stack build && stack install
-ENTRYPOINT generator
+ENTRYPOINT generator -c config.yaml
