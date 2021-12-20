@@ -35,4 +35,6 @@ List of implemented operations:
 * Count viewing by product
 * Count viewing by product and user
 
-
+### Grafana
+We use Grafana with Kafka and Clickhouse for UI and analytics. 
+Grafana is also launched by the Docker and use preconfigured provisioning settings.
