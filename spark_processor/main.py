@@ -58,6 +58,13 @@ CATALOG_PRODUCT_DB_RESPONSE = "CatalogProductDbRep"
 CATALOG_LINKED_PRODUCT_DB_REQUEST = "CatalogLinkedProductsDbReq"
 CATALOG_LINKED_PRODUCT_DB_RESPONSE = "CatalogLinkedProductsDbRep"
 
+##################################################
+##################################################
+##################################################
+
+CART_REQUEST_ADD = "CartReqAdd"
+CART_DB_REQUEST = "CartDbReq"
+CART_DB_RESPONSE = "CartDbRep"
 
 ##################################################
 ##################################################
@@ -172,6 +179,13 @@ def catalog_main_page_look_up_times(catalog_stream: DStream):
         .foreachRDD(dump_to_kafka)
 
 
+def cart_add(catalog_stream: DStream):
+    catalog_stream \
+        .updateStateByKey(lambda new_value, old_value: 1 if old_value is None else old_value + 1) \
+        .map(lambda c: (datetime.datetime.now(), c)) \
+        .foreachRDD(dump_to_kafka)
+
+
 def trace_logs(json_stream: DStream):
     json_stream.map(
         lambda x: (x['commonData']['requestId']['requestId'], parser.parse(x['commonData']['time']).timestamp(), x)) \
@@ -213,7 +227,12 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
         .map(map_catalog_logs_to_state)
 
     catalog_main_page_look_up_times(catalog_stream)
-    catalog_stream.foreachRDD(print_rdd)
+
+    cart_stream = json_stream.filter(lambda x: x["commonData"]["serverName"] == "Cart") \
+        .map((lambda x: (x['commonData']['userId']['userId'], x))) \
+        .map(map_catalog_logs_to_state)
+
+    catalog_main_page_look_up_times(cart_stream)
 
     ssc.start()
 
