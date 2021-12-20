@@ -1,5 +1,6 @@
 SELECT cluster, shard_num, host_name, host_address, port, is_local FROM system.clusters;
 
+drop database if exists db on cluster webshop;
 CREATE DATABASE db ON CLUSTER webshop;
 
 -- request_trace

@@ -158,7 +158,6 @@ services:
     # networks:
     #   clickhouse-network:
     #     ipv4_address: 172.23.0.50
-
   pyspark:
     image: klntsky/spark-env:1.0 # jupyter/pyspark-notebook:latest
     hostname: pyspark
@@ -166,9 +165,20 @@ services:
     ports:
       - 8888:8888
       - 4040:4040
+    depends_on:
+      - kafka
+      - zookeeper
+      - generator
+      - clickhouse01
+      - clickhouse02
+      - clickhouse03
+      - clickhouse04
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.7
+    entrypoint: /usr/bin/env python /spark/run.py
+    volumes:
+      - ./spark:/spark
     #volumes:
     #  - pySpark: pySpark/
     # depends_on:
