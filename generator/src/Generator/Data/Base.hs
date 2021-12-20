@@ -37,11 +37,10 @@ import Generator.Data.Card
   genCardListRedisRequest)
 import Generator.Data.Catalog
   (CatalogDbReply, CatalogDbRequest, CatalogRequest(..), LinkedProductsDbReply,
-  LinkedProductsDbRequest, ProductDbReply, ProductDbRequest, ProductRequest, cdrepStatus,
+  LinkedProductsDbRequest, ProductDbReply, ProductDbRequest, ProductId, ProductRequest, cdrepStatus,
   genCatalogDbReply, genCatalogDbRequest, genLinkedProductsDbReply, genLinkedProductsDbRequest,
   genProductDbReply, genProductDbRequest, genProductRequest, lpdrepStatus, pdrepStatus, prProductId)
-import Generator.Data.Common
-  (Level(..), RequestId, ServerName(..), Status(..), UserId, genRequestId, genUserId)
+import Generator.Data.Common (Level(..), RequestId, ServerName(..), Status(..), UserId, genUserId)
 import Generator.Data.Login
   (LoginDbRequest, LoginReply, LoginRequest, LogoutDbRequest, LogoutReply, LogoutRequest(..),
   genLoginDbRequest, genLoginReply, genLoginRequest, genLogoutDbRequest, genLogoutReply,
@@ -213,8 +212,9 @@ genCatalogData userId requestId = do
 genCatalogAction
   :: UserId
   -> RequestId
+  -> ProductId
   -> IO (Data CardActionRequest, Data CardActionRedisRequest, Data CardActionRedisReply)
-genCatalogAction userId requestId = do
+genCatalogAction userId requestId productId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -223,7 +223,7 @@ genCatalogAction userId requestId = do
         , _cdUserId = userId
         , _cdRequestId = requestId
         }
-  cardAction@CardActionRequest{..} <- sample genCardAction
+  cardAction@CardActionRequest{..} <- sample $ genCardAction productId
   let cardActionRedisRequest = genCardActionRedisRequest userId _caProductId _caAction
   cardActionRedisReply <- sample genCardActionRedisReply
   pure
@@ -235,8 +235,9 @@ genCatalogAction userId requestId = do
 genCatalogList
   :: UserId
   -> RequestId
+  -> [(ProductId, Int)]
   -> IO (Data CardListRequest, Data CardListRedisRequest, Data CardListRedisReply)
-genCatalogList userId requestId = do
+genCatalogList userId requestId userCard = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -247,7 +248,7 @@ genCatalogList userId requestId = do
         }
       cardListRequest = CardListRequest
       cardListRedisRequest = genCardListRedisRequest userId
-  cardListRedisReply <- sample genCardListRedisReply
+  cardListRedisReply <- sample $ genCardListRedisReply userCard
   pure
     ( Data CardListReq commonData cardListRequest
     , Data CardListRedisReq commonData{_cdLogLevel = Debug} cardListRedisRequest

@@ -79,6 +79,7 @@ library:
   dependencies:
     - aeson
     - async
+    - containers
     - hedgehog
     - hw-kafka-client
     - lens

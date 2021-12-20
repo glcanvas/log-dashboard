@@ -6,6 +6,7 @@ module Generator.Setup
 
 import Universum
 
+import qualified StmContainers.Map as M
 import qualified StmContainers.Set as S
 
 import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO)
@@ -19,7 +20,9 @@ import System.Environment.Blank (getEnv)
 
 import Generator.Config.Def
   (GeneratorConfig, GeneratorConfigRec, HasConfig(..), MonadConfig, option)
+import Generator.Core.Card (HasCardMap(..), MonadCardMap(..))
 import Generator.Core.Requests (HasRequest(..), MonadRequest(..))
+import Generator.Data.Catalog (ProductId)
 import Generator.Data.Common (RequestId, UserId)
 import Generator.Kafka (HasKafka(..), MonadKafka(..), producerProps)
 import Generator.Services.Card (CardAction, HasCard(..), MonadCard(..))
@@ -31,6 +34,7 @@ import Generator.Services.Payment (HasPayment(..), MonadPayment)
 data GeneratorContext = GeneratorContext
   { _gcUsers :: S.Set UserId
   , _gcCurRequest :: TVar RequestId
+  , _gcCard :: M.Map UserId (Map ProductId Int)
 
   , _gcCatalogQueue :: TQueue CatalogAction
   , _gcLogoutQueue :: TQueue UserId
@@ -58,6 +62,7 @@ type GeneratorWorkMode m =
   , HasKafka GeneratorContext
   , MonadKafka m
   , MonadRequest m
+  , MonadCardMap m
   , HasLogin GeneratorContext
   , HasCatalog GeneratorContext
   , HasCard GeneratorContext
@@ -74,6 +79,7 @@ runGenerator :: GeneratorConfigRec -> Generator () -> IO ()
 runGenerator cfg action = do
   users <- S.newIO
   requests <- newTVarIO 0
+  card <- M.newIO
   catalogQueue <- newTQueueIO
   logoutQueue  <- newTQueueIO
   cardQueue <- newTQueueIO
@@ -88,6 +94,7 @@ runGenerator cfg action = do
     ( GeneratorContext
       users
       requests
+      card
       catalogQueue
       logoutQueue
       cardQueue
@@ -102,6 +109,7 @@ runGenerator cfg action = do
       ( GeneratorContext
         users
         requests
+        card
         catalogQueue
         logoutQueue
         cardQueue
@@ -138,3 +146,6 @@ instance HasKafka GeneratorContext where
 
 instance HasRequest GeneratorContext where
   getCurRequest = (^. gcCurRequest)
+
+instance HasCardMap GeneratorContext where
+  getCard = (^. gcCard)

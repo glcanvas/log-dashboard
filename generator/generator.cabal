@@ -20,6 +20,7 @@ library
   exposed-modules:
       Generator.Config.Def
       Generator.Config.Reading
+      Generator.Core.Card
       Generator.Core.Requests
       Generator.Data.Base
       Generator.Data.Card
@@ -93,6 +94,7 @@ library
       aeson
     , async
     , base
+    , containers
     , hedgehog
     , hw-kafka-client
     , lens

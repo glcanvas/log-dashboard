@@ -34,7 +34,7 @@ import qualified Hedgehog.Range as Range
 import Control.Lens (makeLenses)
 import Hedgehog (MonadGen)
 
-import Generator.Data.Catalog (ProductData, ProductId(..), genProductData, genProductId)
+import Generator.Data.Catalog (ProductData, ProductId(..), genProductData)
 import Generator.Data.Common (Status(..), UserId(..), genStatus)
 import Generator.Data.Util (AesonType(..), deriveToJSON)
 
@@ -61,11 +61,10 @@ data CardActionRequest = CardActionRequest
 makeLenses ''CardActionRequest
 deriveToJSON 'CardActionRequest MultipleF
 
-genCardAction :: MonadGen m => m CardActionRequest
-genCardAction = do
+genCardAction :: MonadGen m => ProductId -> m CardActionRequest
+genCardAction _caProductId = do
   actionSelector <- Gen.integral @_ @Int (Range.constant 1 2)
   let _caAction = if actionSelector == 1 then Add else Remove
-  _caProductId <- genProductId
   pure CardActionRequest{..}
 
 data CardActionRedisRequest = CardActionRedisRequest { _carreqQuery :: Text }
@@ -104,17 +103,15 @@ genCardListRedisRequest (UserId uId) = CardListRedisRequest $
   "select * from card where user_id = " <> show uId <> ";"
 
 data CardListRedisReply = CardListRedisReply
-  { _clrrepProducts :: [CardElement]
+  { _clrrepProducts :: [(ProductId, Int)]
   , _clrrepStatus :: Status
   }
 makeLenses ''CardListRedisReply
 deriveToJSON 'CardListRedisReply MultipleF
 
-genCardListRedisReply :: MonadGen m => m CardListRedisReply
-genCardListRedisReply = do
+genCardListRedisReply :: MonadGen m => [(ProductId, Int)] ->  m CardListRedisReply
+genCardListRedisReply userCard = do
   s <- genStatus
   case s of
     Invalid -> pure $ CardListRedisReply [] s
-    Valid -> CardListRedisReply <$>
-      (Gen.list (Range.constant 1 10) genCardElement) <*>
-      pure s
+    Valid -> pure $ CardListRedisReply userCard s
