@@ -171,10 +171,10 @@ def trace_user(json_stream: DStream):
         .foreachRDD(print_rdd)
 
 
-def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream], terminations=None, app_name=None):
+def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream], app_name=None):
     sc = SparkContext(master, app_name)
     ssc = StreamingContext(sc, 1)
-    ssc.checkpoint("/Users/nduginets/PycharmProjects/log-dashboard/checkpoints")
+    ssc.checkpoint("checkpoints")
     stream = input_builder(ssc)
 
     raw_stream = stream.map(try_to_parse)
@@ -212,18 +212,13 @@ def initialize_spark(master, input_builder: Callable[[StreamingContext], DStream
 
 
 if __name__ == "__main__":
-    # Create a local StreamingContext with two working thread and batch interval of 1 second
 
     zookeeper_path = os.environ['ZOOKEEPER_PATH']
     spark_path = os.environ['SPARK_PATH']
     print(os.environ)
 
     builder = lambda context: KafkaUtils.createStream(context, zookeeper_path, "logs", {"log-topic": 1})
-    # local_builder = lambda context: context.textFileStream("file:" + env_dir)
 
-    spark = initialize_spark(spark_path, builder, {
-        "login": print_rdd
-    }, "log-dashboard-spark")
+    spark = initialize_spark(spark_path, builder, "log-dashboard-spark")
 
     spark.awaitTermination()
-    # shutil.rmtree(env_dir)
