@@ -218,7 +218,7 @@ if __name__ == "__main__":
     spark_path = os.environ['SPARK_PATH']
     print(os.environ)
 
-    builder = lambda context: KafkaUtils.createStream(context, zookeeper_path, "logs", {"topic": 1})
+    builder = lambda context: KafkaUtils.createStream(context, zookeeper_path, "logs", {"log-topic": 1})
     # local_builder = lambda context: context.textFileStream("file:" + env_dir)
 
     spark = initialize_spark(spark_path, builder, {
