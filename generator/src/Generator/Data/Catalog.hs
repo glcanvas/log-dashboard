@@ -55,6 +55,7 @@ genPrice :: MonadGen m => m Price
 genPrice = Price <$> Gen.integral (Range.constant 1 1000000)
 
 newtype ProductId = ProductId {unProductId :: Int}
+  deriving newtype (Eq, Ord)
 deriveToJSON 'ProductId OneF
 
 genProductId :: MonadGen m => m ProductId
