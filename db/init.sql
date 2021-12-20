@@ -7,7 +7,7 @@ CREATE DATABASE db ON CLUSTER webshop;
 
 CREATE TABLE IF NOT EXISTS db.request_trace ON CLUSTER webshop
 (
-    trace_id Int64,
+    request_id Int64,
     time DateTime,
     log String
 )
@@ -17,7 +17,7 @@ ORDER BY (time);
 
 CREATE TABLE db.distr_request_trace
 ON CLUSTER webshop AS db.request_trace
-  ENGINE = Distributed(webshop, db, request_trace, xxHash64(trace_id));
+  ENGINE = Distributed(webshop, db, request_trace, xxHash64(request_id));
 
 CREATE TABLE db.distr_request_trace_kafka AS db.distr_request_trace
 ENGINE = Kafka()
@@ -198,3 +198,10 @@ FROM db.distr_users_spend_time_online_kafka;
 -- it will allow running SELECT on kafka streams as tables
 
 -- SET stream_like_engine_allow_direct_select = true;
+
+-- DEMO:
+-- SELECT * FROM db.distr_online_user LIMIT 10;
+-- SELECT * FROM db.distr_user_trace LIMIT 10;
+-- SELECT * FROM db.distr_request_trace LIMIT 10;
+-- SELECT * FROM db.distr_users_spend_time_online LIMIT 10;
+-- SELECT * FROM db.distr_failed_login LIMIT 10;

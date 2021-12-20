@@ -8,6 +8,7 @@
 
 import os
 import json
+import time
 import socket
 from pyspark import SparkConf, SparkContext, SQLContext
 from pyspark.streaming import StreamingContext
@@ -18,7 +19,7 @@ import pyspark.sql.functions as F
 from pyspark.sql.functions import pandas_udf, from_json, to_json
 from pyspark.sql.functions import PandasUDFType
 from jinja2 import Environment, FileSystemLoader
-from kafka import KafkaConsumer, KafkaProducer, json
+from kafka import KafkaConsumer, KafkaProducer
 
 
 APP_NAME = "jupsparkapp-1"
@@ -37,16 +38,43 @@ consumer.subscribe("gen-logs")
 producer = KafkaProducer(bootstrap_servers='kafka:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
 
+logged_in = {}
+
 while(True):
     for msg in consumer:
         message = json.loads(msg.value)
         cd = message['commonData']
-        time = cd['time'][:19]
+        data = message['data']
+        ts = cd['time'][:19]
         if message['action'] == 'LoginReq':
-            data = message['commonData']
-            payload = { 'user_id': data['userId'], 'time': time }
+            payload = { 'user_id': cd['userId'], 'time': ts }
+            logged_in[cd['userId']] = int(time.time())
             producer.send('online_user', payload)
-        print(msg.value[:30])
+            print('online_user')
+        elif message['action'] == 'LogoutReq':
+            if cd['userId'] in logged_in:
+                spent = int(time.time()) - logged_in[cd['userId']]
+                payload = { 'user_id': cd['userId'], 'time': ts, 'spent': spent }
+                producer.send('users_spend_time_online', payload)
+                print('users_spend_time_online')
+        elif message['action'] == 'LoginRep':
+            if data['status'] == 'Invalid':
+                payload = { 'user_id': cd['userId'], 'time': ts }
+                producer.send('failed_login', payload)
+                print('failed_login')
+        payload = {
+            'user_id': cd['userId'],
+            'time': ts,
+            'log': message['action']
+        }
+        producer.send('user_trace', payload)
+        payload = {
+            'request_id': cd['requestId'],
+            'time': ts,
+            'log': message['action']
+        }
+        producer.send('request_trace', payload)
+        print('trace', msg.value[:40])
         producer.flush()
 
 # # sc = SparkContext(appName="PysparkStreaming")
