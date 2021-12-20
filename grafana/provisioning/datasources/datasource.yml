@@ -1,0 +1,26 @@
+apiVersion: 1
+
+datasources:
+ - name: Clickhouse
+   type: vertamedia-clickhouse-datasource
+   access: proxy
+   url: http://clickhouse01:8123
+
+   # <bool> enable/disable basic auth
+   basicAuth: true
+   # <string> basic auth username
+   basicAuthUser: default
+   # <string> basic auth password
+   basicAuthPassword: 123
+   # <bool> enable/disable with credentials headers
+   withCredentials: true
+   # <bool> mark as default datasource. Max one per org
+   isDefault: true
+   # <map> fields that will be converted to json and stored in json_data
+   jsonData:
+      # <bool> enable/disable sending 'add_http_cors_header=1' parameter
+      addCorsHeader: true
+      # <bool> enable/disable using POST method for sending queries
+      usePOST: true
+      # <string> default database name
+      defaultDatabase: clickhouse
