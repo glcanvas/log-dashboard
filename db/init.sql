@@ -79,6 +79,11 @@ CREATE TABLE db.distr_online_user
 ON CLUSTER webshop AS db.online_user
   ENGINE = Distributed(webshop, db, online_user, xxHash64(user_id));
 
+
+-- To test run:
+
+-- SELECT * FROM db.distr_online_user LIMIT 10;
+
 CREATE TABLE db.distr_online_user_kafka AS db.distr_online_user
 ENGINE = Kafka()
 SETTINGS

@@ -1,4 +1,4 @@
-sleep 5
+sleep 15
 
 while true; do
     res="$(clickhouse-client --host clickhouse01 -nm < /db/init.sql)"
