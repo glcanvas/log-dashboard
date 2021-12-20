@@ -154,10 +154,12 @@ services:
     ports:
       - 3000:3000
     environment:
-      GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource,grafana-worldmap-panel
-    # networks:
-    #   clickhouse-network:
-    #     ipv4_address: 172.23.0.50
+      GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.15
 
   pyspark:
     image: klntsky/spark-env:1.0 # see build.sh, it's build on top of
