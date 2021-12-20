@@ -21,9 +21,11 @@ import System.Environment.Blank (getEnv)
 import Generator.Config.Def
   (GeneratorConfig, GeneratorConfigRec, HasConfig(..), MonadConfig, option)
 import Generator.Core.Card (HasCardMap(..), MonadCardMap(..))
+import Generator.Core.Order (HasOrderMap(..), MonadOrderMap(..))
 import Generator.Core.Requests (HasRequest(..), MonadRequest(..))
 import Generator.Data.Catalog (ProductId)
-import Generator.Data.Common (RequestId, UserId)
+import Generator.Data.Common (OrderId, RequestId, UserId)
+import Generator.Data.Order (OrderActionType)
 import Generator.Kafka (HasKafka(..), MonadKafka(..), producerProps)
 import Generator.Services.Card (CardAction, HasCard(..), MonadCard(..))
 import Generator.Services.Catalog (CatalogAction, HasCatalog(..), MonadCatalog(..))
@@ -35,12 +37,13 @@ data GeneratorContext = GeneratorContext
   { _gcUsers :: S.Set UserId
   , _gcCurRequest :: TVar RequestId
   , _gcCard :: M.Map UserId (Map ProductId Int)
+  , _gcOrder :: M.Map UserId (Map OrderId OrderActionType)
 
   , _gcCatalogQueue :: TQueue CatalogAction
   , _gcLogoutQueue :: TQueue UserId
   , _gcCardQueue :: TQueue CardAction
-  , _gcOrderQueue :: TQueue UserId
-  , _gcPaymentQueue :: TQueue UserId
+  , _gcOrderQueue :: TQueue (UserId, Maybe OrderId, OrderActionType)
+  , _gcPaymentQueue :: TQueue (UserId, OrderId)
 
   , _gcConfig :: GeneratorConfigRec
   , _gcKafkaProducer :: Maybe KafkaProducer
@@ -63,6 +66,7 @@ type GeneratorWorkMode m =
   , MonadKafka m
   , MonadRequest m
   , MonadCardMap m
+  , MonadOrderMap m
   , HasLogin GeneratorContext
   , HasCatalog GeneratorContext
   , HasCard GeneratorContext
@@ -80,6 +84,7 @@ runGenerator cfg action = do
   users <- S.newIO
   requests <- newTVarIO 0
   card <- M.newIO
+  order <- M.newIO
   catalogQueue <- newTQueueIO
   logoutQueue  <- newTQueueIO
   cardQueue <- newTQueueIO
@@ -95,6 +100,7 @@ runGenerator cfg action = do
       users
       requests
       card
+      order
       catalogQueue
       logoutQueue
       cardQueue
@@ -110,6 +116,7 @@ runGenerator cfg action = do
         users
         requests
         card
+        order
         catalogQueue
         logoutQueue
         cardQueue
@@ -149,3 +156,6 @@ instance HasRequest GeneratorContext where
 
 instance HasCardMap GeneratorContext where
   getCard = (^. gcCard)
+
+instance HasOrderMap GeneratorContext where
+  getOrderMap = (^. gcOrder)

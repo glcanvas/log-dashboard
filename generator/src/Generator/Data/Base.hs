@@ -40,15 +40,15 @@ import Generator.Data.Catalog
   LinkedProductsDbRequest, ProductDbReply, ProductDbRequest, ProductId, ProductRequest, cdrepStatus,
   genCatalogDbReply, genCatalogDbRequest, genLinkedProductsDbReply, genLinkedProductsDbRequest,
   genProductDbReply, genProductDbRequest, genProductRequest, lpdrepStatus, pdrepStatus, prProductId)
-import Generator.Data.Common (Level(..), RequestId, ServerName(..), Status(..), UserId, genUserId)
+import Generator.Data.Common
+  (Level(..), OrderId, RequestId, ServerName(..), Status(..), UserId, genUserId)
 import Generator.Data.Login
   (LoginDbRequest, LoginReply, LoginRequest, LogoutDbRequest, LogoutReply, LogoutRequest(..),
   genLoginDbRequest, genLoginReply, genLoginRequest, genLogoutDbRequest, genLogoutReply,
   lorepStatus, lrepStatus, lreqPasswordHash)
 import Generator.Data.Order
-  (OrderActionDbReply, OrderActionDbRequest, OrderActionRequest(..), OrderDetailsRequest,
-  genOrderActionDbReply, genOrderActionDbRequest, genOrderActionRequest, genOrderDetailsRequest,
-  oadrepStatus)
+  (OrderActionDbReply, OrderActionDbRequest, OrderActionRequest(..), OrderActionType,
+  genOrderActionDbReply, genOrderActionDbRequest, genOrderActionRequest, oadrepStatus)
 import Generator.Data.Payment
   (PaymentCredentialsReply, PaymentCredentialsRequest, PaymentRequest, genPaymentCredentialsReply,
   genPaymentCredentialsRequest, genPaymentRequest)
@@ -258,13 +258,14 @@ genCatalogList userId requestId userCard = do
 genOrder
   :: UserId
   -> RequestId
+  -> Maybe OrderId
+  -> OrderActionType
   -> IO
      ( Data OrderActionRequest
-     , Data OrderDetailsRequest
      , Data OrderActionDbRequest
      , Data OrderActionDbReply
      )
-genOrder userId requestId = do
+genOrder userId requestId mOrderId aType = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -273,13 +274,11 @@ genOrder userId requestId = do
         , _cdUserId = userId
         , _cdRequestId = requestId
         }
-  orderActionRequest@OrderActionRequest{..} <- sample genOrderActionRequest
-  let orderDetailsRequest = genOrderDetailsRequest _oarOrderId
-      orderActionDbRequest = genOrderActionDbRequest userId _oarOrderId _oarActionType
+  orderActionRequest@OrderActionRequest{..} <- sample $ genOrderActionRequest mOrderId aType
+  let orderActionDbRequest = genOrderActionDbRequest userId _oarOrderId _oarActionType
   orderActionDbReply <- sample genOrderActionDbReply
   pure
     ( Data OrderActionReq commonData orderActionRequest
-    , Data OrderDetailsReq commonData orderDetailsRequest
     , Data OrderActionDbReq commonData{_cdLogLevel = Debug} orderActionDbRequest
     , Data OrderActionDbRep commonData{_cdLogLevel = if orderActionDbReply ^. oadrepStatus == Invalid then Error else Debug} orderActionDbReply
     )
@@ -287,8 +286,9 @@ genOrder userId requestId = do
 genPayment
   :: UserId
   -> RequestId
+  -> OrderId
   -> IO (Data PaymentRequest, Data PaymentCredentialsRequest, Data PaymentCredentialsReply)
-genPayment userId requestId = do
+genPayment userId requestId orderId = do
   time <- getCurrentTime
   let commonData = CommonData
         { _cdLogLevel = Info
@@ -297,7 +297,7 @@ genPayment userId requestId = do
         , _cdUserId = userId
         , _cdRequestId = requestId
         }
-  paymentRequest <- sample genPaymentRequest
+  paymentRequest <- sample $ genPaymentRequest orderId
   paymentCredentialsRequest <- sample genPaymentCredentialsRequest
   paymentCredentialsReply <- sample genPaymentCredentialsReply
   pure

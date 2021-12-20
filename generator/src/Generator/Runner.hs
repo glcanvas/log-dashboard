@@ -12,7 +12,8 @@ import Control.Concurrent.STM.TQueue (tryReadTQueue, writeTQueue)
 import Control.Monad.IO.Unlift (UnliftIO(..), askUnliftIO)
 import System.Random (randomRIO)
 
-import Generator.Data.Common (UserId)
+import Generator.Data.Common (Status(..), UserId)
+import Generator.Data.Order (OrderActionType(..))
 import Generator.Services.Card (CardAction(..), HasCard(..), MonadCard(..))
 import Generator.Services.Catalog (CatalogAction(..), HasCatalog(..), MonadCatalog(..))
 import Generator.Services.Login (HasLogin(..), MonadLogin(..))
@@ -96,7 +97,7 @@ cardAction = forever $ do
       else if rn < 4
            then atomically $ writeTQueue catalogQueue $ CatalogVisit userId
            else if rn < 8
-             then atomically $ writeTQueue orderQueue userId
+             then atomically $ writeTQueue orderQueue (userId, Nothing, Reserve)
              else atomically $ writeTQueue catalogQueue $ ProductVisit userId
     _ -> pure ()
 
@@ -105,23 +106,33 @@ orderAction = forever $ do
   liftIO $ threadDelay 1000000
   orderQueue <- getOrderQueue <$> ask
   paymentQueue <- getPaymentQueue <$> ask
+  catalogQueue <- getCatalogQueue <$> ask
   mAction <- atomically $ tryReadTQueue orderQueue
   case mAction of
-    Just userId -> logined userId $ do
-      orderActionE userId
-      atomically $ writeTQueue paymentQueue userId
+    Just (userId, mOrderId, aType) -> logined userId $ do
+      orderId <- orderActionE userId mOrderId aType
+      atomically $ writeTQueue paymentQueue (userId, orderId)
+      atomically $ writeTQueue catalogQueue $ CatalogVisit userId
     _ -> pure ()
 
 paymentAction :: GeneratorWorkMode m => m ()
 paymentAction = forever $ do
   liftIO $ threadDelay 1000000
   paymentQueue <- getPaymentQueue <$> ask
-  catalogQueue <- getCatalogQueue <$> ask
+  orderQueue <- getOrderQueue <$> ask
   mAction <- atomically $ tryReadTQueue paymentQueue
   case mAction of
-    Just userId -> logined userId $ do
-      paymentActionE userId
-      atomically $ writeTQueue catalogQueue $ CatalogVisit userId
+    Just (userId, orderId) -> logined userId $ do
+      status <- paymentActionE userId orderId
+      case status of
+        Valid -> atomically $ writeTQueue orderQueue (userId, Just orderId, Paid)
+        Invalid -> do
+          rn <- liftIO $ randomRIO (1 :: Int, 10)
+          if rn < 3
+          then do
+            liftIO $ threadDelay 5000000
+            atomically $ writeTQueue orderQueue (userId, Just orderId, Refund)
+          else atomically $ writeTQueue paymentQueue (userId, orderId)
     _ -> pure ()
 
 runner :: GeneratorWorkMode m => m ()

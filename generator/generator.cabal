@@ -21,6 +21,7 @@ library
       Generator.Config.Def
       Generator.Config.Reading
       Generator.Core.Card
+      Generator.Core.Order
       Generator.Core.Requests
       Generator.Data.Base
       Generator.Data.Card
