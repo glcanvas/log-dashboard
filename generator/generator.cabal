@@ -21,14 +21,20 @@ library
       Generator.Config.Def
       Generator.Config.Reading
       Generator.Data.Base
+      Generator.Data.Card
       Generator.Data.Catalog
       Generator.Data.Common
       Generator.Data.Login
+      Generator.Data.Order
+      Generator.Data.Payment
       Generator.Data.Util
       Generator.Kafka
       Generator.Runner
+      Generator.Services.Card
       Generator.Services.Catalog
       Generator.Services.Login
+      Generator.Services.Order
+      Generator.Services.Payment
       Generator.Setup
   other-modules:
       Paths_generator

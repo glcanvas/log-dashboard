@@ -10,7 +10,7 @@ services:
       ZOOKEEPER_SYNC_LIMIT: 2
     networks:
       default:
-        { }
+        {}
       clickhouse-network:
         ipv4_address: 172.23.0.8
   kafka:
@@ -56,7 +56,7 @@ services:
     # ports:
     #   - "8123:8123"
     #   - "9000:9000"
-    #      - "9009:9009"
+#      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -76,7 +76,7 @@ services:
     # ports:
     #   - "8123:8123"
     #   - "9000:9000"
-    #      - "9009:9009"
+#      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -96,7 +96,7 @@ services:
     # ports:
     #   - "8123:8123"
     #   - "9000:9000"
-    #      - "9009:9009"
+#      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -116,7 +116,7 @@ services:
     # ports:
     #   - "8123:8123"
     #   - "9000:9000"
-    #      - "9009:9009"
+#      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -130,7 +130,7 @@ services:
     image: yandex/clickhouse-client
     depends_on:
       - "clickhouse01"
-    command: [ '--host', 'clickhouse01' ]
+    command: ['--host', 'clickhouse01' ]
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.9
@@ -145,6 +145,9 @@ services:
     network_mode: host
     environment:
       KAFKA_BROKER: "localhost:9094"
+    # networks:
+    #   clickhouse-network:
+    #     ipv4_address: 172.23.0.50
   spark:
     image: docker.io/bitnami/spark:3
     environment:
