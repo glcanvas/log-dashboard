@@ -35,12 +35,14 @@ genUserId :: MonadGen m => m UserId
 genUserId = UserId <$> Gen.integral (Range.constant 0 1000000)
 
 newtype OrderId = OrderId {unOrderId :: Int}
+  deriving newtype (Eq, Ord)
 deriveToJSON ''OrderId OneF
 
 genOrderId :: MonadGen m => m OrderId
 genOrderId = OrderId <$> Gen.integral (Range.constant 0 1000000)
 
 newtype RequestId = RequestId { unRequestId :: Int }
+  deriving newtype Num
 deriveToJSON 'RequestId OneF
 
 genRequestId :: MonadGen m => m RequestId

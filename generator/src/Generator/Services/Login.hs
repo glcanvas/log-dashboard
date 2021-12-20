@@ -10,6 +10,7 @@ import qualified StmContainers.Set as S
 import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Aeson (encode)
 
+import Generator.Core.Requests (MonadRequest(..))
 import Generator.Data.Base (cdUserId, dCommonData, dData, genLoginData, genLogoutData)
 import Generator.Data.Common (Status(..), UserId(..))
 import Generator.Data.Login (lorepStatus, lrepStatus)
@@ -23,9 +24,10 @@ class HasLogin env where
   getUsers :: env -> S.Set UserId
   getLogoutQueue :: env -> TQueue UserId
 
-instance (MonadIO m, Monad m, HasLogin env, MonadReader env m, MonadKafka m) => MonadLogin m where
+instance (MonadIO m, Monad m, HasLogin env, MonadReader env m, MonadKafka m, MonadRequest m) => MonadLogin m where
   login = do
-    (req, reqDb, rep) <- liftIO genLoginData
+    request <- nextRequest
+    (req, reqDb, rep) <- liftIO $ genLoginData request
     logKafka $ decodeUtf8 $ encode req
     logKafka $ decodeUtf8 $ encode reqDb
     let userId = req ^. dCommonData . cdUserId
@@ -37,7 +39,8 @@ instance (MonadIO m, Monad m, HasLogin env, MonadReader env m, MonadKafka m) => 
         logKafka $ decodeUtf8 $ encode rep
         pure $ Just userId
   logout userId = do
-    (req, reqDb, rep) <- liftIO $ genLogoutData userId
+    request <- nextRequest
+    (req, reqDb, rep) <- liftIO $ genLogoutData request userId
     logKafka $ decodeUtf8 $ encode req
     logKafka $ decodeUtf8 $ encode reqDb
     case rep ^. dData . lorepStatus of
