@@ -168,7 +168,7 @@ def fail_login(login_stream: DStream):
 def catalog_main_page_look_up_times(catalog_stream: DStream):
     catalog_stream \
         .updateStateByKey(lambda new_value, old_value: 1 if old_value is None else old_value + 1) \
-        .map(lambda c: (datetime.datetime.now(), c, "!!!")) \
+        .map(lambda c: (datetime.datetime.now(), c)) \
         .foreachRDD(dump_to_kafka)
 
 
