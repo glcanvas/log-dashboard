@@ -42,21 +42,14 @@ services:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
-      # - KAFKA_CLUSTERS_0_READONLY=true
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.6
   clickhouse01:
     image: yandex/clickhouse-server
-    # links:
-    #   - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.11
-    # ports:
-    #   - "8123:8123"
-    #   - "9000:9000"
-    #      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -68,15 +61,9 @@ services:
       KAFKA_BROKER: "kafka:9092"
   clickhouse02:
     image: yandex/clickhouse-server
-    # links:
-    #   - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.12
-    # ports:
-    #   - "8123:8123"
-    #   - "9000:9000"
-    #      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -88,15 +75,9 @@ services:
       KAFKA_BROKER: "kafka:9092"
   clickhouse03:
     image: yandex/clickhouse-server
-    # links:
-    #   - kafka
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.13
-    # ports:
-    #   - "8123:8123"
-    #   - "9000:9000"
-    #      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -113,10 +94,6 @@ services:
     networks:
       clickhouse-network:
         ipv4_address: 172.23.0.14
-    # ports:
-    #   - "8123:8123"
-    #   - "9000:9000"
-    #      - "9009:9009"
     ulimits:
       nproc: 65535
     depends_on:
@@ -154,7 +131,7 @@ services:
     ports:
       - 3000:3000
     environment:
-      GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource
+      GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource,grafana-worldmap-panel
     volumes:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     networks:
