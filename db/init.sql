@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS db.request_trace ON CLUSTER webshop
     time DateTime,
     log String
 )
-ENGINE = MergeTree()
+ENGINE = ReplicatedMergeTree()
 PARTITION BY toYear(time)
 ORDER BY (time);
 
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS db.user_trace ON CLUSTER webshop
     time DateTime,
     log String
 )
-ENGINE = MergeTree()
+ENGINE = ReplicatedMergeTree()
 PARTITION BY toYear(time)
 ORDER BY (time);
 
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS db.online_user ON CLUSTER webshop
     user_id Int64,
     time DateTime
 )
-ENGINE = MergeTree()
+ENGINE = ReplicatedMergeTree()
 PARTITION BY toYear(time)
 ORDER BY (time);
 
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS db.failed_login ON CLUSTER webshop
     user_id Int64,
     time DateTime
 )
-ENGINE = MergeTree()
+ENGINE = ReplicatedMergeTree()
 PARTITION BY toYear(time)
 ORDER BY (time);
 
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS db.users_spend_time_online ON CLUSTER webshop
     time DateTime,
     spent Int64
 )
-ENGINE = MergeTree()
+ENGINE = ReplicatedMergeTree()
 PARTITION BY toYear(time)
 ORDER BY (time);
 
@@ -168,7 +168,7 @@ FROM db.distr_users_spend_time_online_kafka;
 -- (
 --         action String
 -- )
--- ENGINE = MergeTree()
+-- ENGINE = ReplicatedMergeTree()
 -- PARTITION BY action
 -- ORDER BY (action);
 
