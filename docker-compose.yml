@@ -132,6 +132,12 @@ services:
       - 3000:3000
     environment:
       GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource,grafana-worldmap-panel
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    networks:
+      clickhouse-network:
+        ipv4_address: 172.23.0.15
+
   pyspark:
     image: klntsky/spark-env:1.0 # see build.sh, it's build on top of
     # jupyter/pyspark-notebook:latest

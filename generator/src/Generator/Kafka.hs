@@ -17,7 +17,7 @@ import Say (say)
 producerProps :: ProducerProperties
 producerProps = brokersList ["localhost:9094"]
              <> sendTimeout (Timeout 10000)
-             <> setCallback (deliveryCallback print)
+             <> setCallback (deliveryCallback $ \_ -> pure ())
              <> logLevel KafkaLogDebug
 
 targetTopic :: TopicName

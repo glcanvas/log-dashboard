@@ -24,7 +24,7 @@ import qualified Hedgehog.Range as Range
 import Control.Lens (makeLenses)
 import Hedgehog (MonadGen)
 
-import Generator.Data.Common (OrderId(..), Status(..), genOrderId, genStatus)
+import Generator.Data.Common (OrderId(..), Status(..), genStatus)
 import Generator.Data.Util (AesonType(..), deriveToJSON, genName)
 
 data PaymentProvider = Btc | Mastercard | Visa
@@ -39,10 +39,9 @@ data PaymentRequest = PaymentRequest
 makeLenses ''PaymentRequest
 deriveToJSON 'PaymentRequest MultipleF
 
-genPaymentRequest :: MonadGen m => m PaymentRequest
-genPaymentRequest = do
+genPaymentRequest :: MonadGen m => OrderId -> m PaymentRequest
+genPaymentRequest _prOrderId = do
   actionSelector <- Gen.integral @_ @Int (Range.constant 1 3)
-  _prOrderId <- genOrderId
   let _prProvider
         | actionSelector == 1 = Btc
         | actionSelector == 2 = Mastercard

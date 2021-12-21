@@ -1,25 +1,20 @@
 module Generator.Data.Order
-  ( OrderActionRequest (..)
-  , OrderDetailsRequest (..)
+  ( OrderActionType (..)
+  , OrderActionRequest (..)
   , OrderActionDbRequest (..)
   , OrderActionDbReply (..)
 
   , oarOrderId
   , oarActionType
-  , odrOrderId
   , oadreqQuery
   , oadrepStatus
 
   , genOrderActionRequest
-  , genOrderDetailsRequest
   , genOrderActionDbRequest
   , genOrderActionDbReply
   ) where
 
 import Universum
-
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
 
 import Control.Lens (makeLenses)
 import Hedgehog (MonadGen)
@@ -38,22 +33,10 @@ data OrderActionRequest = OrderActionRequest
 makeLenses ''OrderActionRequest
 deriveToJSON 'OrderActionRequest MultipleF
 
-genOrderActionRequest :: MonadGen m => m OrderActionRequest
-genOrderActionRequest = do
-  actionSelector <- Gen.integral @_ @Int (Range.constant 1 3)
-  _oarOrderId <- genOrderId
-  let _oarActionType
-        | actionSelector == 1 = Reserve
-        | actionSelector == 2 = Paid
-        | otherwise = Refund
+genOrderActionRequest :: MonadGen m => Maybe OrderId -> OrderActionType -> m OrderActionRequest
+genOrderActionRequest mOrderId _oarActionType = do
+  _oarOrderId <- maybe genOrderId pure mOrderId
   pure OrderActionRequest{..}
-
-data OrderDetailsRequest = OrderDetailsRequest {_odrOrderId :: OrderId}
-makeLenses ''OrderDetailsRequest
-deriveToJSON 'OrderDetailsRequest MultipleF
-
-genOrderDetailsRequest :: OrderId -> OrderDetailsRequest
-genOrderDetailsRequest = OrderDetailsRequest
 
 data OrderActionDbRequest = OrderActionDbRequest {_oadreqQuery :: Text}
 makeLenses ''OrderActionDbRequest
