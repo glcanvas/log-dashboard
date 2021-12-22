@@ -26,6 +26,10 @@ For generator, we build two images: one that contains all its haskell dependenci
 
 ### Generator
 
+We decided to implement true services with shared state and messaging queue.
+Using such architecture we are able to achieve not only consistency of messages but also consistency of data.
+Haskell really hepled us in this issue as it has great STM library for working with shared state and also Hedgehog library for property testing which has a a great posibility for data generation and its managment.
+Additionally we write all generated logs directly to Kafka.
 
 ### Kafka
 
